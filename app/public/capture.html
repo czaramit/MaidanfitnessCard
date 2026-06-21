@@ -241,8 +241,8 @@ function genSessionId(){
   const venue   = document.getElementById('venueSel').value;
   const mPoint  = document.getElementById('mPointSel').value;
   const bandCode = BAND_CODES[state.band] || state.band.toUpperCase().slice(0,3);
-  // "Coach A" → "CoachA", "Floater" → "Floater"
-  const coach = document.getElementById('coachSel').value.replace(/\s+/g,'');
+  // Session ID intentionally excludes coach name — enables correct multi-coach UPSERT merging.
+  // captured_by is injected server-side from the JWT session.
   const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const dateVal = document.getElementById('sessionDate').value; // YYYY-MM-DD
   let dateStr;
@@ -253,7 +253,7 @@ function genSessionId(){
     const d = new Date();
     dateStr = String(d.getDate()).padStart(2,'0') + MON[d.getMonth()] + String(d.getFullYear()).slice(2);
   }
-  return `${venue}-${mPoint}-${bandCode}-${coach}-${dateStr}`;
+  return `${venue}-${mPoint}-${bandCode}-${dateStr}`;
 }
 
 function refreshSessionId(){

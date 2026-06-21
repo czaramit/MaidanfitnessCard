@@ -288,10 +288,14 @@ async function generatePDFs() {
     if (!data.ok) throw new Error(data.error || 'Dispatch failed');
 
     if (data.run_id) {
-      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">view run</a>`;
+      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">view run ↗</a>`;
+      // Save run_id to localStorage so page reload doesn't lose it
+      localStorage.setItem('maidan_last_run_id', data.run_id);
+      localStorage.setItem('maidan_last_run_url', data.run_url);
       pollStatus(data.run_id);
     } else {
-      status.textContent = 'Dispatched (finding run…)';
+      // Couldn't find run_id yet — give a direct link to Actions page
+      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">check GitHub Actions ↗</a>`;
       btn.disabled = false;
     }
   } catch (err) {

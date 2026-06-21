@@ -20,13 +20,15 @@ function checkConfig() {
   if (!REPO() || !TOKEN()) throw new Error('GH_REPO and GH_TOKEN must be set');
 }
 
-/** Dispatch the generate.yml workflow */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/** Dispatch the generate.yml workflow, then retry until we find the run_id */
 async function dispatchWorkflow(session_id, student_ids) {
   checkConfig();
   const url = `${GH_API}/repos/${REPO()}/actions/workflows/generate.yml/dispatches`;
 
-  // Record the time so we can find the run
-  const dispatchedAt = new Date().toISOString();
+  // Timestamp BEFORE dispatch so we can filter runs created after it
+  const before = new Date();
 
   const res = await fetch(url, {
     method: 'POST',
@@ -35,7 +37,9 @@ async function dispatchWorkflow(session_id, student_ids) {
       ref: 'main',
       inputs: {
         session_id: session_id,
-        student_ids: student_ids ? (Array.isArray(student_ids) ? student_ids.join(',') : student_ids) : '',
+        student_ids: student_ids
+          ? (Array.isArray(student_ids) ? student_ids.join(',') : student_ids)
+          : '',
       },
     }),
   });
@@ -45,18 +49,37 @@ async function dispatchWorkflow(session_id, student_ids) {
     throw new Error(`GitHub dispatch failed (${res.status}): ${text}`);
   }
 
-  // Wait a moment then find the run
-  await new Promise(r => setTimeout(r, 2000));
-  const runsUrl = `${GH_API}/repos/${REPO()}/actions/runs?event=workflow_dispatch&created=>${dispatchedAt.slice(0,10)}&per_page=5`;
-  const runsRes = await fetch(runsUrl, { headers: headers() });
-  const runsData = await runsRes.json();
+  // Retry up to 8 times (max ~20 sec) waiting for the run to appear
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await sleep(attempt === 0 ? 3000 : 2500); // wait 3s first, then 2.5s each retry
 
-  const run = runsData.workflow_runs && runsData.workflow_runs[0];
+    const runsRes = await fetch(
+      `${GH_API}/repos/${REPO()}/actions/runs?event=workflow_dispatch&per_page=10`,
+      { headers: headers() }
+    );
+    const runsData = await runsRes.json();
+    const runs = runsData.workflow_runs || [];
+
+    // Find runs created after our dispatch timestamp
+    const run = runs.find(r => new Date(r.created_at) >= before);
+
+    if (run) {
+      return {
+        ok: true,
+        dispatched: true,
+        run_id: run.id,
+        run_url: run.html_url,
+      };
+    }
+    console.log(`gh.js: run not found yet (attempt ${attempt + 1}/8)`);
+  }
+
+  // Timed out finding the run — return without run_id so the client can link to Actions page
   return {
     ok: true,
     dispatched: true,
-    run_id: run ? run.id : null,
-    run_url: run ? run.html_url : null,
+    run_id: null,
+    run_url: `https://github.com/${REPO()}/actions`,
   };
 }
 
@@ -74,10 +97,12 @@ async function getRunStatus(run_id) {
     run_url: data.html_url,
   };
 
-  // If complete, get artifact download URL
+  // If complete and successful, get artifact download URL
   if (data.status === 'completed' && data.conclusion === 'success') {
-    const artUrl = `${GH_API}/repos/${REPO()}/actions/runs/${run_id}/artifacts`;
-    const artRes = await fetch(artUrl, { headers: headers() });
+    const artRes = await fetch(
+      `${GH_API}/repos/${REPO()}/actions/runs/${run_id}/artifacts`,
+      { headers: headers() }
+    );
     const artData = await artRes.json();
     if (artData.artifacts && artData.artifacts.length > 0) {
       result.artifact_url = artData.artifacts[0].archive_download_url;
