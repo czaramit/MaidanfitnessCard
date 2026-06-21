@@ -1,0 +1,62 @@
+name: Generate Fitness Cards
+
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: 'Session ID (e.g. GNPS-M1-TOD-21JUN26)'
+        required: true
+      student_ids:
+        description: 'Comma-separated student IDs (blank = all)'
+        required: false
+        default: ''
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          echo "Chromium installed at: $(which chromium-browser)"
+
+      - name: Install generator dependencies
+        working-directory: generator
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=true npm ci || PUPPETEER_SKIP_DOWNLOAD=true npm install
+
+      - name: Fetch session data
+        run: |
+          SESSION_ID="${{ github.event.inputs.session_id }}"
+          echo "Fetching rows for session: $SESSION_ID"
+          curl -sL "${{ secrets.HQ_APPSCRIPT_URL }}?action=rows&session_id=${SESSION_ID}&token=${{ secrets.HQ_TOKEN }}" > generator/session_data.json
+          echo "Data fetched:"
+          cat generator/session_data.json | head -c 500
+
+      - name: Transform to card JSON
+        working-directory: generator
+        run: |
+          node csv-to-json.js session_data.json --out out/json/
+          echo "JSON files:"
+          ls -la out/json/
+
+      - name: Generate PDFs
+        working-directory: generator
+        run: |
+          node generate-all.js out/json/ --out out/pdfs/ --concurrency 2
+
+      - name: Upload PDF artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cards-${{ github.event.inputs.session_id }}
+          path: generator/out/pdfs/*.pdf
+          retention-days: 30

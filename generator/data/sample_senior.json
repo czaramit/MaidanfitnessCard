@@ -1,0 +1,126 @@
+{
+  "card_id": "card_TFA-GNP-0042_2026Q3_M1",
+  "version": 1,
+  "tier_name": "Fitness Snapshot",
+  "band_label": "Senior",
+  "band_range": "16–18",
+  "pillars_label": "Seven measurements",
+  "student": {
+    "student_id": "TFA-GNP-0042",
+    "first_name": "Arjun",
+    "last_name": "Kapoor",
+    "age": 17
+  },
+  "cycle": {
+    "cycle_id": "2026Q3",
+    "point": "M1",
+    "month_label": "Month 1 of 3",
+    "issued_on": "1 July 2026",
+    "combine_day": "29 Jun 2026"
+  },
+  "venue": {
+    "name": "Guru Nanak",
+    "field": "7v7"
+  },
+  "growth": {
+    "height_cm": 178,
+    "weight_kg": 68.4
+  },
+  "pillars": [
+    {
+      "roman": "i",
+      "name": "Lower-body power",
+      "drill": "Triple hop · best of 2",
+      "what": "Explosive force the legs produce across repeated efforts — the power football demands in repeated sprints and jumps.",
+      "value": "684",
+      "unit": "centimetres"
+    },
+    {
+      "roman": "ii",
+      "name": "Speed & acceleration",
+      "drill": "30 m sprint · best of 2",
+      "what": "How quickly Arjun accelerates from a standing start and carries that speed over distance.",
+      "value": "4.42",
+      "unit": "seconds"
+    },
+    {
+      "roman": "iii",
+      "name": "Agility & change of direction",
+      "drill": "T-test · single attempt",
+      "what": "How sharply he changes direction, shuffles, and recovers — every turn and reaction on the pitch.",
+      "value": "10.1",
+      "unit": "seconds"
+    },
+    {
+      "roman": "iv",
+      "name": "Ball coordination",
+      "drill": "Long-pass accuracy · 5 attempts",
+      "what": "How accurately he strikes a lofted long pass to a target — consistency across five attempts, not one good kick.",
+      "value": "3<small>/5</small>",
+      "unit": "hits · from 25 m"
+    },
+    {
+      "roman": "v",
+      "name": "Endurance",
+      "drill": "800 m timed",
+      "what": "How he sustains effort over a continuous run — one of several stamina markers, directionally useful.",
+      "value": "3:21",
+      "unit": "min : sec"
+    },
+    {
+      "roman": "vi",
+      "name": "Mobility & flexibility",
+      "drill": "Sit-and-reach · best of 2",
+      "what": "How freely he moves through a full range — supporting comfortable movement and athletic demand.",
+      "value": "31",
+      "unit": "centimetres"
+    },
+    {
+      "roman": "vii",
+      "name": "Strength",
+      "drill": "Push-ups 60 s · plank hold",
+      "what": "How his muscles sustain effort — strength-endurance, distinct from maximal strength, which we don't measure.",
+      "value": "48",
+      "unit": "push-ups",
+      "flag": "plank 3:00 — held to the test limit"
+    }
+  ],
+  "narrative": {
+    "text": "Arjun completed all seven tests on Combine Day. He covered the 800 metres at a steady pace, held his plank to the full test limit, and gave consistent effort at every station.",
+    "attribution": "Observed by the coaching team · Tekkers Football Academy",
+    "reviewed_by": "curriculum_director_01",
+    "reviewed_at": "2026-06-30T19:14:00+05:30"
+  },
+  "next_line": "Arjun's next Fitness Snapshot will be ready at the end of Month 3, when this cycle of training completes.",
+  "qr_target_url": "https://maidanplay.com/how-we-measure",
+  "page2": {
+    "lead": "This is a snapshot of Arjun's physical state on the day we measured — power, speed, agility, ball coordination, endurance, mobility, and strength. <strong>The numbers are facts, not judgements.</strong> This card is not a medical or diagnostic tool, and not a comparison against any benchmark, age norm, or peer.",
+    "blocks": [
+      {
+        "title": "What we measured",
+        "body": "Seven movement tests run on Combine Day, each a real measurement of one capacity. We show the numbers honestly, with no score and no rating."
+      },
+      {
+        "title": "How often",
+        "body": "Twice in a 3-month cycle — end of Month 1 and end of Month 3. Both follow the same protocol, so a change between them is meaningful."
+      },
+      {
+        "title": "A note on how some tests are recorded",
+        "body": "Some carry a little context so the picture stays honest — the plank is held only to a 3:00 limit, and the long-pass distance is set per session and shown beside the result. These describe how the test was done, not marks against the athlete."
+      },
+      {
+        "title": "If Arjun trained with us earlier",
+        "body": "Several of these tests — the triple hop, T-test, sit-and-reach, push-ups, plank, and 800 m — are identical across age groups, so the numbers tell a story over multiple years, not just one cycle."
+      },
+      {
+        "title": "A note on the numbers",
+        "body": "We deliberately do not compare Arjun against other athletes, age-band averages, or any benchmark, and we use no traffic-light scoring. The numbers describe what happened on the day. We collected only height, weight, and the seven measurements; the data is held by Maidan Play and not shared outside the academy. If you'd like to discuss anything here, the coaching and curriculum team is available.",
+        "full": true
+      }
+    ]
+  },
+  "contact": {
+    "email": "academy@maidanplay.com",
+    "phone": "+91 XX XXX XXXX"
+  }
+}

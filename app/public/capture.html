@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maidan Play — Coach Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-950:#0A0D11; --ink-900:#0E1419; --ink-800:#161E26; --ink-700:#1F2933;
+    --ink-200:#9AA5B0; --ink-100:#CBD5DE; --white:#FFFFFF;
+    --br-700:#7A5424; --br-500:#A87436; --br-300:#C99A4E; --br-200:#DAB876; --br-100:#EAD2A0;
+    --grad:linear-gradient(135deg,#EAD2A0 0%,#C99A4E 50%,#A87436 100%);
+    --ok:#6FA87A; --warn:#D8A24A; --err:#C56B5C;
+    --rule:#26323d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--ink-900);color:var(--ink-100);line-height:1.5;
+    -webkit-font-smoothing:antialiased;min-height:100vh;}
+  .mono{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.22em;}
+  .fr{font-family:'Fraunces',serif;}
+  .accent{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic;}
+  a{color:var(--br-300);}
+
+  header{border-bottom:1px solid var(--rule);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--ink-950);position:sticky;top:0;z-index:10;}
+  .wm{display:flex;align-items:center;gap:12px;}
+  .wm .mark{width:34px;height:34px;border-radius:7px;border:1.5px solid var(--br-500);display:grid;place-items:center;background:var(--ink-800);}
+  .wm .mark span{font-family:'Fraunces',serif;font-weight:600;font-size:18px;}
+  .wm .name{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--white);}
+  .wm .sub{font-size:11px;color:var(--br-300);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+  .phase{font-size:10px;color:var(--ink-200);}
+
+  .banner{background:rgba(216,162,74,.08);border-bottom:1px solid var(--rule);color:var(--br-200);font-size:12px;padding:9px 24px;}
+  .banner b{color:var(--br-100);font-weight:600;}
+
+  /* setup row */
+  .setup{padding:20px 24px;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;border-bottom:1px solid var(--rule);}
+  .fld{display:flex;flex-direction:column;gap:6px;}
+  .fld label{font-size:10px;color:var(--ink-200);}
+  select,input[type=text],input[type=date]{background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);
+    padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;min-width:120px;}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer;}
+  select:focus,input:focus{outline:none;border-color:var(--br-500);}
+  .sess-display{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;
+    padding:9px 14px;background:var(--ink-950);border:1px solid var(--br-700);border-radius:7px;
+    color:var(--br-100);white-space:nowrap;
+  }
+
+  .tabs{display:flex;gap:8px;padding:16px 24px 0;flex-wrap:wrap;}
+  .tab{font-size:11px;padding:9px 16px;border:1px solid var(--rule);border-radius:20px;background:transparent;color:var(--ink-200);cursor:pointer;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;transition:all .15s;}
+  .tab.active{border-color:var(--br-500);color:var(--br-100);background:rgba(201,154,78,.08);}
+  .tab:hover{color:var(--br-200);}
+
+  main{padding:20px 24px 100px;display:grid;grid-template-columns:300px 1fr;gap:24px;max-width:1200px;}
+  @media(max-width:820px){main{grid-template-columns:1fr;}}
+
+  .panel{background:var(--ink-800);border:1px solid var(--rule);border-radius:12px;overflow:hidden;}
+  .panel-h{padding:14px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;}
+  .panel-h .t{font-family:'Fraunces',serif;font-size:16px;color:var(--white);}
+  .panel-h .c{font-size:10px;color:var(--ink-200);}
+
+  .roster-item{padding:13px 18px;border-bottom:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .12s;}
+  .roster-item:last-child{border-bottom:none;}
+  .roster-item:hover{background:var(--ink-700);}
+  .roster-item.active{background:rgba(201,154,78,.10);border-left:3px solid var(--br-300);padding-left:15px;}
+  .roster-item .nm{font-size:14px;color:var(--ink-100);}
+  .roster-item .ag{font-size:10px;color:var(--ink-200);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-700);border:1px solid var(--rule);}
+  .dot.done{background:var(--ok);border-color:var(--ok);}
+  .dot.part{background:var(--warn);border-color:var(--warn);}
+
+  .cap-empty{padding:48px 24px;text-align:center;color:var(--ink-200);font-size:14px;}
+  .cap-h{padding:18px;border-bottom:1px solid var(--rule);}
+  .cap-h .nm{font-family:'Fraunces',serif;font-size:22px;color:var(--white);}
+  .cap-h .meta{font-size:11px;color:var(--ink-200);margin-top:3px;}
+
+  .item{padding:18px;border-bottom:1px solid var(--rule);}
+  .item:last-child{border-bottom:none;}
+  .item-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
+  .item-h .in{font-family:'Fraunces',serif;font-size:16px;color:var(--ink-100);}
+  .item-h .alias{font-size:11px;color:var(--br-300);font-style:italic;margin-left:6px;}
+  .item-h .unit{font-size:10px;color:var(--ink-200);}
+
+  .entry{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .try{display:flex;flex-direction:column;gap:4px;align-items:center;}
+  .try .lab{font-size:9px;color:var(--ink-200);letter-spacing:.12em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--ink-900);}
+  .stepper button{width:38px;height:42px;border:none;background:var(--ink-700);color:var(--br-200);font-size:20px;cursor:pointer;}
+  .stepper button:active{background:var(--br-700);}
+  .stepper input{width:64px;height:42px;border:none;background:transparent;color:var(--white);text-align:center;font-size:16px;font-family:'JetBrains Mono',monospace;}
+  .numin{width:90px;height:42px;border:1px solid var(--rule);background:var(--ink-900);color:var(--white);text-align:center;font-size:16px;border-radius:8px;font-family:'JetBrains Mono',monospace;}
+  .best{font-size:12px;color:var(--br-200);}
+  .best b{font-family:'JetBrains Mono',monospace;color:var(--br-100);font-size:15px;}
+
+  .statusrow{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .sbtn{font-size:11px;padding:7px 12px;border:1px solid var(--rule);border-radius:7px;background:transparent;color:var(--ink-200);cursor:pointer;transition:all .12s;}
+  .sbtn.on{border-color:var(--br-500);color:var(--br-100);background:rgba(201,154,78,.10);}
+  .sbtn.on.na{border-color:var(--err);color:#e7a99e;background:rgba(197,107,92,.12);}
+
+  .flags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .flag{font-size:10px;padding:5px 10px;border:1px dashed var(--rule);border-radius:14px;color:var(--ink-200);cursor:pointer;}
+  .flag.on{border-style:solid;border-color:var(--br-500);color:var(--br-100);}
+
+  .warnmsg{font-size:11px;color:var(--warn);margin-top:8px;}
+  .savebar{padding:16px 18px;display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--rule);}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:11px 18px;border-radius:8px;cursor:pointer;border:1px solid var(--br-500);color:var(--br-100);background:transparent;transition:filter .12s;}
+  .btn.primary{background:var(--grad);color:var(--ink-950);border:none;font-weight:500;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.ghost{border-color:var(--rule);color:var(--ink-200);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* engagement grid */
+  table.eg{width:100%;border-collapse:collapse;}
+  table.eg th,table.eg td{padding:10px 12px;border-bottom:1px solid var(--rule);text-align:left;font-size:13px;}
+  table.eg th{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--ink-200);font-weight:500;}
+  .yn{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;}
+  .yn button{border:none;background:var(--ink-900);color:var(--ink-200);font-size:11px;padding:6px 10px;cursor:pointer;}
+  .yn button.y.on{background:rgba(111,168,122,.18);color:#9fd0aa;}
+  .yn button.n.on{background:var(--ink-700);color:var(--ink-100);}
+  select.bucket{min-width:84px;padding:6px 8px;font-size:12px;}
+
+  /* HQ sync bar — fixed bottom */
+  .syncbar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--ink-950);border-top:1px solid var(--rule);
+    padding:12px 24px;display:flex;align-items:center;
+    justify-content:space-between;gap:16px;z-index:10;
+  }
+  .stat{font-size:12px;color:var(--ink-200);}
+  .stat b{color:var(--br-100);font-family:'JetBrains Mono',monospace;}
+  .sync-status{font-size:11px;color:var(--ink-200);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;}
+  .sync-status.ok{color:var(--ok);}
+  .sync-status.err{color:var(--err);}
+  .sync-status.sending{color:var(--warn);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wm">
+    <div class="mark"><span class="accent">M</span></div>
+    <div>
+      <div class="name">Maidan Play <span style="color:var(--ink-200);font-weight:400;">× Tekkers FA</span></div>
+      <div class="sub">Combine Day Capture · Coach</div>
+    </div>
+  </div>
+  <div class="phase mono">Phase 1 · v1.0</div>
+</header>
+
+<div class="banner">
+  Capture results for each student, then tap <b>Send to HQ</b> when the session is complete. Data goes straight to the central sheet.
+</div>
+
+<!-- ── SETUP ── -->
+<div class="setup">
+  <div class="fld">
+    <label class="mono">Age band</label>
+    <select id="bandSel"></select>
+  </div>
+  <div class="fld">
+    <label class="mono">Venue</label>
+    <select id="venueSel" onchange="refreshSessionId()">
+      <option value="GNPS">GNPS</option>
+    </select>
+  </div>
+  <div class="fld">
+    <label class="mono">Session date</label>
+    <input type="date" id="sessionDate" onchange="refreshSessionId()"
+      style="min-width:148px;" />
+  </div>
+  <div class="fld">
+    <label class="mono">Cycle</label>
+    <select id="mPointSel" onchange="refreshSessionId()">
+      <option value="M1">M1</option>
+      <option value="M2">M2</option>
+      <option value="M3">M3</option>
+    </select>
+  </div>
+  <div class="fld">
+    <label class="mono">Captured by</label>
+    <select id="coachSel" onchange="refreshSessionId()">
+      <option>Coach A</option>
+      <option>Coach B</option>
+      <option>Coach C</option>
+      <option>Floater</option>
+    </select>
+  </div>
+  <div class="fld">
+    <label class="mono">Session ID</label>
+    <div class="sess-display" id="sessDisplay">—</div>
+    <!-- hidden input keeps sessId accessible to the rest of the code unchanged -->
+    <input type="hidden" id="sessId" />
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<main id="main"></main>
+
+<!-- ── HQ SYNC BAR ── -->
+<div class="syncbar">
+  <div class="stat">
+    Saved: <b id="recCount">0</b> results &nbsp;·&nbsp;
+    Engagement: <b id="engCount">0</b> &nbsp;·&nbsp;
+    Growth: <b id="grwCount">0</b>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span class="sync-status" id="syncStatus"></span>
+    <button class="btn primary" id="hqBtn" onclick="sendToHQ()">Send to HQ</button>
+  </div>
+</div>
+
+<!-- ─────────────────────────── SCRIPT ─────────────────────────── -->
+<script>
+// ── session check — redirect to /login if not authenticated ──────
+(async function checkSession(){
+  try {
+    const res = await fetch('/api/me', { credentials: 'same-origin' });
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const data = await res.json();
+    if (data.ok && data.user) {
+      // Set coach dropdown to display name (read-only)
+      const sel = document.getElementById('coachSel');
+      sel.innerHTML = `<option>${data.user.displayName}</option>`;
+      sel.disabled = true;
+      sel.style.opacity = '0.7';
+    }
+  } catch (_) { window.location.href = '/login'; }
+})();
+
+// ── tiny helpers ──────────────────────────────────────────────────
+function uid(p){return p+'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);}
+function now(){return new Date().toISOString();}
+
+// ── session ID generation ─────────────────────────────────────────
+const BAND_CODES = {toddler:'TOD', sub_junior:'SJR', junior:'JNR', senior:'SNR'};
+
+function genSessionId(){
+  const venue   = document.getElementById('venueSel').value;
+  const mPoint  = document.getElementById('mPointSel').value;
+  const bandCode = BAND_CODES[state.band] || state.band.toUpperCase().slice(0,3);
+  // "Coach A" → "CoachA", "Floater" → "Floater"
+  const coach = document.getElementById('coachSel').value.replace(/\s+/g,'');
+  const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const dateVal = document.getElementById('sessionDate').value; // YYYY-MM-DD
+  let dateStr;
+  if(dateVal){
+    const [y,m,d] = dateVal.split('-');
+    dateStr = d + MON[parseInt(m,10)-1] + y.slice(2);
+  } else {
+    const d = new Date();
+    dateStr = String(d.getDate()).padStart(2,'0') + MON[d.getMonth()] + String(d.getFullYear()).slice(2);
+  }
+  return `${venue}-${mPoint}-${bandCode}-${coach}-${dateStr}`;
+}
+
+function refreshSessionId(){
+  const id = genSessionId();
+  document.getElementById('sessDisplay').textContent = id;
+  document.getElementById('sessId').value = id;
+}
+
+// ── age-band config ───────────────────────────────────────────────
+const CONFIG = {
+  toddler: { label:'Toddler · 5–7 · Play Report', engagement:true,
+    stations:{
+      'Registration':[
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:80,max:150,attempts:1,dir:'higher',growth:true},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:12,max:45,attempts:1,dir:'higher',growth:true,priv:true},
+      ],
+      'Station 1':[
+        {id:'frog_jumps',label:'Jumping',alias:'Frog jumps',unit:'cm',type:'int',min:30,max:200,attempts:2,dir:'higher'},
+        {id:'flamingo_stand',label:'Balance',alias:'Flamingo stand',unit:'sec',type:'dec',min:0,max:30,attempts:1,dir:'higher',cap:30},
+      ],
+      'Station 2':[
+        {id:'tiger_run',label:'Running',alias:'Tiger run',unit:'sec',type:'dec',min:2.5,max:8,attempts:2,dir:'lower'},
+        {id:'snake_dribble',label:'Ball play',alias:'Snake dribble',unit:'sec',type:'dec',min:6,max:45,attempts:1,dir:'lower'},
+      ],
+    }},
+  sub_junior: { label:'Sub Junior · 8–11 · Fitness Snapshot', engagement:false,
+    stations:{
+      'Registration':[
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:110,max:175,attempts:1,dir:'higher',growth:true},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:18,max:70,attempts:1,dir:'higher',growth:true,priv:true},
+      ],
+      'Station 1':[{id:'standing_long_jump',label:'Power · standing long jump',unit:'cm',type:'int',min:50,max:250,attempts:2,dir:'higher'}],
+      'Station 2':[{id:'sprint_20m',label:'Speed · 20m sprint',unit:'sec',type:'dec',min:3,max:8,attempts:2,dir:'lower'}],
+      'Station 3':[
+        {id:'agility_shuttle',label:'Agility · 4×10m shuttle',unit:'sec',type:'dec',min:9,max:20,attempts:1,dir:'lower'},
+        {id:'single_leg_stand',label:'Balance · single-leg stand',unit:'sec',type:'dec',min:0,max:45,attempts:1,dir:'higher'},
+      ],
+      'Station 4':[{id:'cone_dribble',label:'Ball coord · 5-cone dribble',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower'}],
+      'Endurance':[{id:'endurance_run',label:'Endurance · timed run',unit:'sec',type:'dec',min:120,max:600,attempts:1,dir:'lower'}],
+    }},
+  junior: { label:'Junior · 12–15 · Fitness Snapshot', engagement:false,
+    stations:{
+      'Registration':[
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:130,max:195,attempts:1,dir:'higher',growth:true},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:28,max:95,attempts:1,dir:'higher',growth:true,priv:true},
+      ],
+      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:200,max:900,attempts:2,dir:'higher'}],
+      'Station 2':[{id:'out_and_back_40m',label:'Speed · 40m out-and-back',unit:'sec',type:'dec',min:8,max:20,attempts:2,dir:'lower'}],
+      'Station 3':[
+        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:8,max:20,attempts:1,dir:'lower'},
+        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:5,max:15,attempts:1,dir:'lower'},
+      ],
+      'Station 4':[{id:'slalom',label:'Ball coord · slalom',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower'}],
+      'Block B':[
+        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-10,max:40,attempts:2,dir:'higher'},
+        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:80,attempts:1,dir:'higher'},
+        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180},
+      ],
+      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:480,attempts:1,dir:'lower'}],
+    }},
+  senior: { label:'Senior · 16–18 · Fitness Snapshot', engagement:false,
+    stations:{
+      'Registration':[
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:140,max:205,attempts:1,dir:'higher',growth:true},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:35,max:110,attempts:1,dir:'higher',growth:true,priv:true},
+      ],
+      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:300,max:1000,attempts:2,dir:'higher'}],
+      'Station 2':[{id:'sprint_30m',label:'Speed · 30m sprint',unit:'sec',type:'dec',min:3.5,max:8,attempts:2,dir:'lower'}],
+      'Station 3':[
+        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:7.5,max:18,attempts:1,dir:'lower'},
+        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:4.5,max:12,attempts:1,dir:'lower'},
+      ],
+      'Station 4':[{id:'long_pass',label:'Ball coord · long-pass (hits / 5)',unit:'hits',type:'int',min:0,max:5,attempts:1,dir:'higher'}],
+      'Block B':[
+        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-5,max:45,attempts:2,dir:'higher'},
+        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:100,attempts:1,dir:'higher'},
+        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180},
+      ],
+      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:420,attempts:1,dir:'lower'}],
+    }},
+};
+
+const BUCKETS = {
+  participation:['0-2','2-4','4-6','6-7'],
+  perseverance:['0-10','10-20','20-30','30-40','40-50','50+'],
+  teamwork:['0-2','2-4','4-6','6-7'],
+};
+
+// ── HQ webhook URL — now proxied through the Express app ───────────
+const HQ_WEBHOOK_URL = '/api/capture';
+
+// ── sample roster ─────────────────────────────────────────────────
+const ROSTER = [
+  {student_id:'stu_a1',name:'Aarav Sharma',  dob:'2019'},
+  {student_id:'stu_b2',name:'Ananya Rao',    dob:'2019'},
+  {student_id:'stu_c3',name:'Vivaan Gupta',  dob:'2020'},
+  {student_id:'stu_d4',name:'Diya Nair',     dob:'2018'},
+  {student_id:'stu_e5',name:'Kabir Singh',   dob:'2019'},
+  {student_id:'stu_f6',name:'Myra Patel',    dob:'2020'},
+];
+
+// ── state ─────────────────────────────────────────────────────────
+let state = {
+  band:'toddler', station:null, activeKid:null,
+  results:{},     // key: student_id|drill_id → record
+  engagement:{},  // key: student_id|pillar → record
+  growth:{},      // key: student_id → {height_cm, weight_kg}
+  draft:{},       // transient: student_id|drill_id → {a1,a2,status,reason,flags[]}
+  engTab:false,
+};
+
+// ── init ──────────────────────────────────────────────────────────
+const bandSel = document.getElementById('bandSel');
+Object.keys(CONFIG).forEach(b=>{
+  const o=document.createElement('option');o.value=b;o.textContent=CONFIG[b].label;bandSel.appendChild(o);
+});
+bandSel.value = state.band;
+bandSel.onchange = ()=>{
+  state.band=bandSel.value; state.station=null; state.activeKid=null; state.engTab=false;
+  refreshSessionId(); renderTabs(); renderMain();
+};
+
+function stationList(){return Object.keys(CONFIG[state.band].stations);}
+
+// ── session ID: initialise on load ────────────────────────────────
+refreshSessionId();
+
+// ── tabs ──────────────────────────────────────────────────────────
+function renderTabs(){
+  const tabs=document.getElementById('tabs'); tabs.innerHTML='';
+  stationList().forEach(st=>{
+    const b=document.createElement('button');b.className='tab'+((!state.engTab&&state.station===st)?' active':'');
+    b.textContent=st; b.onclick=()=>{state.station=st;state.engTab=false;state.activeKid=null;renderTabs();renderMain();};
+    tabs.appendChild(b);
+  });
+  if(CONFIG[state.band].engagement){
+    const e=document.createElement('button');e.className='tab'+(state.engTab?' active':'');
+    e.textContent='Engagement (group)';
+    e.onclick=()=>{state.engTab=true;state.station=null;renderTabs();renderMain();};
+    tabs.appendChild(e);
+  }
+  if(!state.station&&!state.engTab){state.station=stationList()[0];}
+}
+
+// ── kid completeness ──────────────────────────────────────────────
+function kidStatus(kid){
+  if(state.engTab) return 'todo';
+  const items=CONFIG[state.band].stations[state.station]||[];
+  let done=0;
+  items.forEach(it=>{
+    const r=state.results[kid.student_id+'|'+it.id]||(it.growth&&state.growth[kid.student_id]&&state.growth[kid.student_id][it.id]!=null);
+    if(r)done++;
+  });
+  if(done===0)return 'todo'; if(done<items.length)return 'part'; return 'done';
+}
+
+// ── main render ───────────────────────────────────────────────────
+function renderMain(){
+  const main=document.getElementById('main'); main.innerHTML='';
+  if(state.engTab){renderEngagement(main);refreshCounts();return;}
+
+  // roster panel
+  const rp=document.createElement('div'); rp.className='panel';
+  rp.innerHTML=`<div class="panel-h"><div class="t">Roster</div><div class="c mono">${state.station}</div></div>`;
+  ROSTER.forEach(k=>{
+    const ds=kidStatus(k);
+    const row=document.createElement('div');
+    row.className='roster-item'+(state.activeKid===k.student_id?' active':'');
+    row.innerHTML=`<div class="nm">${k.name}</div><div class="dot ${ds==='done'?'done':ds==='part'?'part':''}"></div>`;
+    row.onclick=()=>{state.activeKid=k.student_id;loadDraft(k.student_id);renderMain();};
+    rp.appendChild(row);
+  });
+  main.appendChild(rp);
+
+  // capture panel
+  const cp=document.createElement('div'); cp.className='panel';
+  if(!state.activeKid){
+    cp.innerHTML='<div class="cap-empty">Select a student from the roster to capture their results for this station.</div>';
+    main.appendChild(cp); refreshCounts(); return;
+  }
+  const kid=ROSTER.find(k=>k.student_id===state.activeKid);
+  const items=CONFIG[state.band].stations[state.station];
+  cp.innerHTML=`<div class="cap-h"><div class="nm">${kid.name}</div><div class="meta mono">${state.station} · captured by ${document.getElementById('coachSel').value}</div></div>`;
+  items.forEach(it=>cp.appendChild(renderItem(kid,it)));
+
+  const sb=document.createElement('div'); sb.className='savebar';
+  sb.innerHTML=`<div class="stat">Tap values, set status if needed, then save.</div>`;
+  const save=document.createElement('button'); save.className='btn primary'; save.textContent='Save & next';
+  save.onclick=()=>saveKid(kid);
+  sb.appendChild(save); cp.appendChild(sb);
+  main.appendChild(cp);
+  refreshCounts();
+}
+
+function dkey(sid,id){return sid+'|'+id;}
+function loadDraft(sid){state.draft={};}
+
+// ── item renderer ─────────────────────────────────────────────────
+function renderItem(kid,it){
+  const wrap=document.createElement('div'); wrap.className='item';
+  const k=dkey(kid.student_id,it.id);
+  const existing=state.results[k];
+  const gExisting=it.growth&&state.growth[kid.student_id]?state.growth[kid.student_id][it.id]:null;
+
+  if(!state.draft[k]){
+    state.draft[k]= existing
+      ? {a1:existing._a1??existing.value,a2:existing._a2??'',status:existing.status,reason:existing.not_attempted_reason||'',flags:[...(existing.flags||[])]}
+      : (gExisting!=null
+        ? {a1:gExisting,a2:'',status:'completed',reason:'',flags:[]}
+        : {a1:'',a2:'',status:'completed',reason:'',flags:[]});
+  }
+  const d=state.draft[k];
+  const aliasH=it.alias?`<span class="alias">"${it.alias}"</span>`:'';
+  const privH=it.priv?' · <span style="color:var(--ink-200)">enter privately</span>':'';
+  wrap.innerHTML=`<div class="item-h"><div class="in">${it.label}${aliasH}</div><div class="unit mono">${it.unit}${it.attempts===2?' · best of 2':''}${privH}</div></div>`;
+
+  const entry=document.createElement('div'); entry.className='entry';
+
+  function inputEl(which){
+    if(it.type==='int'){
+      const s=document.createElement('div'); s.className='stepper';
+      const minus=document.createElement('button'); minus.textContent='–';
+      const inp=document.createElement('input'); inp.type='number'; inp.value=d[which]; inp.inputMode='numeric';
+      const plus=document.createElement('button'); plus.textContent='+';
+      minus.onclick=()=>{inp.value=(parseInt(inp.value||0)-1);d[which]=inp.value;upd();};
+      plus.onclick=()=>{inp.value=(parseInt(inp.value||0)+1);d[which]=inp.value;upd();};
+      inp.oninput=()=>{d[which]=inp.value;upd();};
+      s.appendChild(minus);s.appendChild(inp);s.appendChild(plus);return s;
+    } else {
+      const inp=document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.className='numin';
+      inp.value=d[which]; inp.inputMode='decimal'; inp.placeholder=it.unit;
+      inp.oninput=()=>{d[which]=inp.value;upd();};return inp;
+    }
+  }
+
+  const t1=document.createElement('div'); t1.className='try';
+  const l1=document.createElement('div'); l1.className='lab'; l1.textContent=it.attempts===2?'Try 1':'Result';
+  t1.appendChild(l1);t1.appendChild(inputEl('a1'));entry.appendChild(t1);
+  if(it.attempts===2){
+    const t2=document.createElement('div');t2.className='try';
+    const l2=document.createElement('div');l2.className='lab';l2.textContent='Try 2';
+    t2.appendChild(l2);t2.appendChild(inputEl('a2'));entry.appendChild(t2);
+  }
+  const bestWrap=document.createElement('div');bestWrap.className='best';entry.appendChild(bestWrap);
+  wrap.appendChild(entry);
+  const warn=document.createElement('div');warn.className='warnmsg';wrap.appendChild(warn);
+
+  // status row (skip for growth items)
+  if(!it.growth){
+    const sr=document.createElement('div');sr.className='statusrow';
+    [['completed','Completed'],['not_attempted','Not attempted'],['capped','Capped'],['modified','Modified']].forEach(([v,lab])=>{
+      const b=document.createElement('button');
+      b.className='sbtn'+(d.status===v?' on'+(v==='not_attempted'?' na':''):'');
+      b.textContent=lab;
+      b.onclick=()=>{
+        d.status=v;
+        // re-render status row in place
+        sr.querySelectorAll('.sbtn').forEach((btn,i)=>{
+          const sv=[['completed'],['not_attempted'],['capped'],['modified']][i][0];
+          btn.className='sbtn'+(d.status===sv?' on'+(sv==='not_attempted'?' na':''):'');
+        });
+        upd();
+      };
+      sr.appendChild(b);
+    });
+    wrap.appendChild(sr);
+    if(d.status==='not_attempted'){
+      const rsel=document.createElement('select');rsel.style.marginTop='10px';
+      ['','refused','injured','not_present','other'].forEach(r=>{
+        const o=document.createElement('option');o.value=r;o.textContent=r?r.replace('_',' '):'reason…';rsel.appendChild(o);
+      });
+      rsel.value=d.reason;rsel.onchange=()=>{d.reason=rsel.value;};wrap.appendChild(rsel);
+    }
+  }
+
+  // flags
+  const fl=document.createElement('div');fl.className='flags';
+  ['capped','modified_form','improvised_goal','skipped_cone','running_not_dribbling'].forEach(f=>{
+    const b=document.createElement('button');b.className='flag'+(d.flags.includes(f)?' on':'');
+    b.textContent=f.replace(/_/g,' ');
+    b.onclick=()=>{d.flags.includes(f)?d.flags.splice(d.flags.indexOf(f),1):d.flags.push(f);renderMain();};
+    fl.appendChild(b);
+  });
+  wrap.appendChild(fl);
+
+  function best(){
+    const v1=parseFloat(d.a1),v2=parseFloat(d.a2);
+    const vals=[v1,v2].filter(v=>!isNaN(v));if(!vals.length)return null;
+    return it.dir==='lower'?Math.min(...vals):Math.max(...vals);
+  }
+  function upd(){
+    const b=best();
+    bestWrap.innerHTML=(it.attempts===2&&b!=null)?`best: <b>${b}</b> ${it.unit}`:'';
+    if(b!=null){
+      if(b<it.min||b>it.max){warn.textContent=`⚠ ${b} ${it.unit} outside expected range (${it.min}–${it.max}). Confirm or correct.`;}
+      else if(it.cap&&b>=it.cap){warn.textContent=`Held to the ${it.cap}${it.unit} test limit — auto-flagged "capped".`;}
+      else{warn.textContent='';}
+    } else warn.textContent='';
+  }
+  upd();
+  return wrap;
+}
+
+// ── save kid ──────────────────────────────────────────────────────
+function saveKid(kid){
+  const items=CONFIG[state.band].stations[state.station];
+  items.forEach(it=>{
+    const k=dkey(kid.student_id,it.id);const d=state.draft[k];if(!d)return;
+    const v1=parseFloat(d.a1),v2=parseFloat(d.a2);
+    const vals=[v1,v2].filter(v=>!isNaN(v));
+    const bestVal=vals.length?(it.dir==='lower'?Math.min(...vals):Math.max(...vals)):null;
+    if(it.growth){
+      if(bestVal!=null){
+        state.growth[kid.student_id]=state.growth[kid.student_id]||{};
+        state.growth[kid.student_id][it.id]=bestVal;
+      }
+      return;
+    }
+    if(bestVal==null && d.status==='completed') return;
+    const rec={
+      result_id:uid('res'),
+      session_id:document.getElementById('sessId').value,
+      student_id:kid.student_id,
+      drill_id:it.id, protocol_version:it.id+'_v1',
+      value:(d.status==='not_attempted'?null:bestVal),
+      unit:it.unit,
+      attempts:(d.status==='not_attempted'?'NA':(it.attempts===2?(vals.length>1?'2':'1'):'1')),
+      status:d.status,
+      not_attempted_reason:(d.status==='not_attempted'?(d.reason||'other'):null),
+      flags:[...d.flags].concat(it.cap&&bestVal>=it.cap&&!d.flags.includes('capped')?['capped']:[]),
+      captured_by:document.getElementById('coachSel').value,
+      captured_at:now(),
+      verification_status:'pending',
+      _a1:d.a1, _a2:d.a2,
+    };
+    state.results[k]=rec;
+  });
+  const idx=ROSTER.findIndex(k=>k.student_id===kid.student_id);
+  state.activeKid=idx<ROSTER.length-1?ROSTER[idx+1].student_id:null;
+  renderMain();
+}
+
+// ── engagement ────────────────────────────────────────────────────
+function renderEngagement(main){
+  const p=document.createElement('div');p.className='panel';p.style.gridColumn='1 / -1';
+  p.innerHTML=`<div class="panel-h"><div class="t">Engagement — group entry</div><div class="c mono">end of session · floater dictates</div></div>`;
+  const tbl=document.createElement('table');tbl.className='eg';
+  tbl.innerHTML=`<thead><tr><th>Student</th><th>Participation</th><th>Perseverance</th><th>Teamwork</th></tr></thead>`;
+  const tb=document.createElement('tbody');
+  ROSTER.forEach(k=>{
+    const tr=document.createElement('tr');
+    const nm=document.createElement('td');nm.innerHTML=`<span style="color:var(--ink-100)">${k.name}</span>`;tr.appendChild(nm);
+    ['participation','perseverance','teamwork'].forEach(pil=>{
+      const td=document.createElement('td');
+      const key=k.student_id+'|'+pil;const cur=state.engagement[key]||{yn:null,bucket:''};
+      const ynw=document.createElement('span');ynw.className='yn';
+      const yb=document.createElement('button');yb.className='y'+(cur.yn===true?' on':'');yb.textContent='Yes';
+      const nb=document.createElement('button');nb.className='n'+(cur.yn===false?' on':'');nb.textContent='Building';
+      yb.onclick=()=>setEng(k,pil,true,cur.bucket);
+      nb.onclick=()=>setEng(k,pil,false,cur.bucket);
+      ynw.appendChild(yb);ynw.appendChild(nb);td.appendChild(ynw);
+      const bsel=document.createElement('select');bsel.className='bucket';bsel.style.marginLeft='8px';
+      bsel.innerHTML='<option value="">min</option>'+BUCKETS[pil].map(b=>`<option ${cur.bucket===b?'selected':''}>${b}</option>`).join('');
+      bsel.onchange=()=>setEng(k,pil,cur.yn,bsel.value);
+      td.appendChild(bsel);tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);p.appendChild(tbl);
+  const note=document.createElement('div');
+  note.style.cssText='padding:14px 18px;font-size:12px;color:var(--ink-200)';
+  note.innerHTML='Unset values at sign-off default to Yes with mid-bucket time and an audit flag. &gt;25% default-Yes in a batch raises a soft warning.';
+  p.appendChild(note);
+  main.appendChild(p);
+}
+function setEng(k,pil,yn,bucket){
+  state.engagement[k.student_id+'|'+pil]={
+    obs_id:uid('obs'), session_id:document.getElementById('sessId').value,
+    student_id:k.student_id, pillar:pil, yn, time_bucket:bucket,
+    default_yes_applied:false, captured_by:'Floater', captured_at:now(),
+    verification_status:'pending',
+  };
+  renderMain();
+}
+
+// ── counts ────────────────────────────────────────────────────────
+function refreshCounts(){
+  document.getElementById('recCount').textContent=Object.keys(state.results).length;
+  document.getElementById('engCount').textContent=Object.keys(state.engagement).length;
+  document.getElementById('grwCount').textContent=Object.keys(state.growth).length;
+}
+
+// ── build wide rows (matches CAPTURE_COLS in AppsScript v3) ───────
+function buildWideRows(){
+  const band=state.band;
+  const sessId=document.getElementById('sessId').value;
+  const mPoint=document.getElementById('mPointSel').value;
+  const coach=document.getElementById('coachSel').value;
+  const dateVal  = document.getElementById('sessionDate').value;
+  const today    = dateVal || new Date().toISOString().slice(0,10);
+
+  // Collect non-growth drills in station order → p1…p9
+  const allDrills=[];
+  Object.values(CONFIG[band].stations).forEach(items=>{
+    items.forEach(it=>{if(!it.growth)allDrills.push(it);});
+  });
+
+  return ROSTER.map(kid=>{
+    const row={
+      student_id:kid.student_id,
+      student_name:kid.name,
+      band_label:CONFIG[band].label,
+      session_id:sessId,
+      measurement_point:mPoint,
+      combine_date:today,
+      exported_at:now(),
+      captured_by:coach,
+      height_cm:state.growth[kid.student_id]?.height_cm??'',
+      weight_kg:state.growth[kid.student_id]?.weight_kg??'',
+    };
+
+    // p1–p9 — blank for unused slots
+    for(let i=1;i<=9;i++){
+      const it=allDrills[i-1];
+      const n=`p${i}`;
+      if(!it){row[`${n}_drill_id`]='';row[`${n}_value`]='';row[`${n}_status`]='';row[`${n}_flag`]='';continue;}
+      const k=dkey(kid.student_id,it.id);
+      const rec=state.results[k];
+      row[`${n}_drill_id`]=it.id;
+      row[`${n}_value`]=rec?.value??'';
+      row[`${n}_status`]=rec?.status??'';
+      row[`${n}_flag`]=(rec?.flags||[]).join('|');
+    }
+
+    // engagement (Toddler only)
+    ['participation','perseverance','teamwork'].forEach(pil=>{
+      const eng=state.engagement[kid.student_id+'|'+pil];
+      row[`eng_${pil}_yn`]=eng?.yn!=null?(eng.yn?'yes':'no'):'';
+      row[`eng_${pil}_bucket`]=eng?.time_bucket??'';
+    });
+
+    row.narrative_text='';
+    row.narrative_attribution='';
+    return row;
+  });
+}
+
+// ── send to HQ ────────────────────────────────────────────────────
+// Uses Content-Type: text/plain to keep the request a CORS "simple request"
+// so no OPTIONS preflight is needed. Apps Script receives the JSON via
+// e.postData.contents and parses it normally.
+async function sendToHQ(){
+  const rows=buildWideRows();
+  if(!rows.length){setSyncStatus('Nothing to send','err');return;}
+
+  const btn=document.getElementById('hqBtn');
+  btn.disabled=true; btn.textContent='Sending…';
+  setSyncStatus('Sending…','sending');
+
+  try {
+    const res=await fetch(HQ_WEBHOOK_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(rows),
+      credentials:'same-origin',  // send session cookie
+    });
+    const data=await res.json();
+
+    if(data.ok){
+      const msg=data.added!=null
+        ?`✓ Sent — ${data.added} new, ${data.merged??0} merged`
+        :'✓ Sent to HQ';
+      setSyncStatus(msg,'ok');
+      btn.textContent='Send to HQ';
+    } else {
+      throw new Error(data.error||'Server error');
+    }
+  } catch(err){
+    setSyncStatus('Send failed — retry','err');
+    btn.textContent='Retry send';
+    console.error('HQ send error:',err);
+  } finally {
+    btn.disabled=false;
+  }
+}
+
+function setSyncStatus(msg,state){
+  const el=document.getElementById('syncStatus');
+  el.textContent=msg;
+  el.className='sync-status '+(state||'');
+}
+
+// ── boot ──────────────────────────────────────────────────────────
+// Seed today's date into the date picker so the session ID is valid on open
+document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+renderTabs();
+renderMain();
+</script>
+</body>
+</html>

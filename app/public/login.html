@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maidan Play — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-950:#0A0D11;--ink-900:#0E1419;--ink-800:#161E26;--ink-700:#1F2933;
+    --ink-200:#9AA5B0;--ink-100:#CBD5DE;--white:#FFFFFF;
+    --br-500:#A87436;--br-300:#C99A4E;--br-200:#DAB876;--br-100:#EAD2A0;
+    --grad:linear-gradient(135deg,#EAD2A0 0%,#C99A4E 50%,#A87436 100%);
+    --rule:#26323d;--err:#C56B5C;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--ink-900);color:var(--ink-100);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  .card{background:var(--ink-800);border:1px solid var(--rule);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;margin:20px;}
+  .wm{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+  .wm .mark{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--br-500);display:grid;place-items:center;background:var(--ink-900);}
+  .wm .mark span{font-family:'Fraunces',serif;font-weight:600;font-size:22px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic;}
+  .wm .name{font-family:'Fraunces',serif;font-weight:500;font-size:18px;color:var(--white);}
+  .wm .sub{font-size:10px;color:var(--br-300);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+  .fld{margin-bottom:18px;}
+  .fld label{display:block;font-size:10px;color:var(--ink-200);margin-bottom:6px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em;}
+  .fld input{width:100%;background:var(--ink-900);border:1px solid var(--rule);color:var(--ink-100);padding:12px 14px;border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;}
+  .fld input:focus{outline:none;border-color:var(--br-500);}
+  .btn{width:100%;padding:13px;border:none;border-radius:8px;background:var(--grad);color:var(--ink-950);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;margin-top:6px;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .err{color:var(--err);font-size:12px;margin-top:12px;text-align:center;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="wm">
+    <div class="mark"><span>M</span></div>
+    <div>
+      <div class="name">Maidan Play <span style="color:var(--ink-200);font-weight:400;">× Tekkers FA</span></div>
+      <div class="sub">Fitness Card System</div>
+    </div>
+  </div>
+  <form id="loginForm">
+    <div class="fld">
+      <label>Username</label>
+      <input type="text" id="username" autocomplete="username" autofocus required>
+    </div>
+    <div class="fld">
+      <label>Password</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn" id="submitBtn">Sign in</button>
+    <div class="err" id="errMsg"></div>
+  </form>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const err = document.getElementById('errMsg');
+  btn.disabled = true; btn.textContent = 'Signing in…'; err.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      window.location.href = data.role === 'admin' ? '/admin' : '/capture';
+    } else {
+      err.textContent = data.error || 'Login failed';
+    }
+  } catch (e) {
+    err.textContent = 'Network error — try again';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+});
+</script>
+</body>
+</html>

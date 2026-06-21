@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maidan Play — Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-950:#0A0D11;--ink-900:#0E1419;--ink-800:#161E26;--ink-700:#1F2933;
+    --ink-200:#9AA5B0;--ink-100:#CBD5DE;--white:#FFFFFF;
+    --br-700:#7A5424;--br-500:#A87436;--br-300:#C99A4E;--br-200:#DAB876;--br-100:#EAD2A0;
+    --grad:linear-gradient(135deg,#EAD2A0 0%,#C99A4E 50%,#A87436 100%);
+    --rule:#26323d;--ok:#6FA87A;--warn:#D8A24A;--err:#C56B5C;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:var(--ink-900);color:var(--ink-100);min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .mono{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.18em;font-size:10px;}
+
+  header{border-bottom:1px solid var(--rule);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--ink-950);position:sticky;top:0;z-index:10;}
+  .wm{display:flex;align-items:center;gap:12px;}
+  .wm .mark{width:34px;height:34px;border-radius:7px;border:1.5px solid var(--br-500);display:grid;place-items:center;background:var(--ink-800);}
+  .wm .mark span{font-family:'Fraunces',serif;font-weight:600;font-size:18px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic;}
+  .wm .name{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--white);}
+  .wm .sub{font-size:11px;color:var(--br-300);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+  .hdr-right{display:flex;align-items:center;gap:14px;}
+  .user-badge{font-size:11px;color:var(--ink-200);}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;border-radius:7px;cursor:pointer;border:1px solid var(--br-500);color:var(--br-100);background:transparent;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.primary{background:var(--grad);color:var(--ink-950);border:none;font-weight:500;}
+  .btn.ghost{border-color:var(--rule);color:var(--ink-200);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .filters{padding:16px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;border-bottom:1px solid var(--rule);background:var(--ink-950);}
+  .fld{display:flex;flex-direction:column;gap:4px;}
+  .fld label{font-size:9px;color:var(--ink-200);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em;}
+  input[type=text],select{background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);padding:8px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;min-width:140px;}
+  input:focus,select:focus{outline:none;border-color:var(--br-500);}
+
+  .stats{padding:12px 24px;display:flex;gap:24px;font-size:12px;color:var(--ink-200);border-bottom:1px solid var(--rule);}
+  .stats b{color:var(--br-100);font-family:'JetBrains Mono',monospace;}
+
+  .table-wrap{overflow-x:auto;padding:0 24px 100px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+  th{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;font-size:9px;color:var(--ink-200);font-weight:500;padding:10px 8px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;position:sticky;top:0;background:var(--ink-900);}
+  td{padding:8px 8px;border-bottom:1px solid var(--rule);color:var(--ink-100);vertical-align:top;}
+  tr:hover td{background:rgba(201,154,78,.03);}
+  .narr-cell{min-width:240px;max-width:340px;}
+  .narr-cell textarea{width:100%;background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);border-radius:6px;font-size:12px;padding:6px 8px;font-family:'Inter',sans-serif;resize:vertical;min-height:60px;}
+  .narr-cell textarea:focus{outline:none;border-color:var(--br-500);}
+  .narr-save{margin-top:4px;font-size:10px;padding:4px 10px;}
+  .narr-status{font-size:10px;margin-top:3px;min-height:14px;}
+  .narr-status.ok{color:var(--ok);}
+  .narr-status.err{color:var(--err);}
+
+  .gen-bar{position:fixed;bottom:0;left:0;right:0;background:var(--ink-950);border-top:1px solid var(--rule);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
+  .gen-status{font-size:12px;color:var(--ink-200);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;}
+  .gen-status.ok{color:var(--ok);}
+  .gen-status.err{color:var(--err);}
+  .gen-status a{color:var(--br-300);}
+
+  .empty{padding:48px 24px;text-align:center;color:var(--ink-200);font-size:14px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wm">
+    <div class="mark"><span>M</span></div>
+    <div>
+      <div class="name">Maidan Play <span style="color:var(--ink-200);font-weight:400;">× Tekkers FA</span></div>
+      <div class="sub">Admin Dashboard</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="user-badge" id="userBadge"></span>
+    <button class="btn ghost" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="fld">
+    <label>Session ID</label>
+    <input type="text" id="fSession" placeholder="e.g. GNPS-M1-TOD-21JUN26">
+  </div>
+  <div class="fld">
+    <label>Band</label>
+    <select id="fBand"><option value="">All</option><option>Toddler</option><option>Sub Junior</option><option>Junior</option><option>Senior</option></select>
+  </div>
+  <div class="fld">
+    <label>Coach</label>
+    <input type="text" id="fCoach" placeholder="Coach name">
+  </div>
+  <div class="fld">
+    <label>Date</label>
+    <input type="text" id="fDate" placeholder="2026-06-21">
+  </div>
+  <button class="btn primary" onclick="loadData()" id="loadBtn">Load</button>
+</div>
+
+<div class="stats" id="statsBar" style="display:none;">
+  Total: <b id="sTotal">0</b> &nbsp;·&nbsp;
+  With narrative: <b id="sNarr">0</b> &nbsp;·&nbsp;
+  Missing narrative: <b id="sMiss">0</b>
+</div>
+
+<div class="table-wrap">
+  <div class="empty" id="emptyMsg">Enter a session ID or filters above and click Load.</div>
+  <table id="dataTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Student</th><th>Band</th><th>Session</th><th>Coach</th><th>Height</th><th>Weight</th>
+        <th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>P6</th><th>P7</th>
+        <th class="narr-cell">Narrative</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="gen-bar">
+  <span class="gen-status" id="genStatus"></span>
+  <button class="btn primary" id="genBtn" onclick="generatePDFs()" disabled>Generate PDFs</button>
+</div>
+
+<script>
+let currentRows = [];
+let currentUser = null;
+
+// ── Session check ────────────────────────────────────────────────
+(async function(){
+  try {
+    const res = await fetch('/api/me', { credentials: 'same-origin' });
+    if (!res.ok) { window.location.href = '/login'; return; }
+    const data = await res.json();
+    if (!data.ok || data.user.role !== 'admin') { window.location.href = '/login'; return; }
+    currentUser = data.user;
+    document.getElementById('userBadge').textContent = data.user.displayName;
+  } catch(_) { window.location.href = '/login'; }
+})();
+
+async function logout() {
+  await fetch('/api/logout', { method:'POST', credentials:'same-origin' });
+  window.location.href = '/login';
+}
+
+// ── Load data ────────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true; btn.textContent = 'Loading…';
+
+  const params = new URLSearchParams();
+  const s = document.getElementById('fSession').value.trim();
+  const b = document.getElementById('fBand').value;
+  const c = document.getElementById('fCoach').value.trim();
+  const d = document.getElementById('fDate').value.trim();
+  if (s) params.set('session_id', s);
+  if (b) params.set('band', b);
+  if (c) params.set('coach', c);
+  if (d) params.set('date', d);
+
+  try {
+    const res = await fetch('/api/data?' + params, { credentials:'same-origin' });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Fetch failed');
+    currentRows = data.rows || [];
+    renderTable();
+  } catch (err) {
+    document.getElementById('emptyMsg').textContent = 'Error: ' + err.message;
+    document.getElementById('emptyMsg').style.display = '';
+    document.getElementById('dataTable').style.display = 'none';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Load';
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const table = document.getElementById('dataTable');
+  const empty = document.getElementById('emptyMsg');
+  const stats = document.getElementById('statsBar');
+
+  if (!currentRows.length) {
+    empty.textContent = 'No rows found for those filters.';
+    empty.style.display = ''; table.style.display = 'none'; stats.style.display = 'none';
+    document.getElementById('genBtn').disabled = true;
+    return;
+  }
+
+  empty.style.display = 'none'; table.style.display = ''; stats.style.display = '';
+  document.getElementById('genBtn').disabled = false;
+
+  const withNarr = currentRows.filter(r => r.narrative_text && r.narrative_text.trim()).length;
+  document.getElementById('sTotal').textContent = currentRows.length;
+  document.getElementById('sNarr').textContent = withNarr;
+  document.getElementById('sMiss').textContent = currentRows.length - withNarr;
+
+  tbody.innerHTML = '';
+  currentRows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    const vals = [
+      row.student_name || row.student_id,
+      row.band_label,
+      row.session_id,
+      row.captured_by,
+      row.height_cm, row.weight_kg,
+    ];
+    for (let p = 1; p <= 7; p++) vals.push(row[`p${p}_value`] || '—');
+
+    vals.forEach(v => {
+      const td = document.createElement('td');
+      td.textContent = v || '';
+      tr.appendChild(td);
+    });
+
+    // Narrative cell
+    const ntd = document.createElement('td');
+    ntd.className = 'narr-cell';
+    const ta = document.createElement('textarea');
+    ta.value = row.narrative_text || '';
+    ta.rows = 3;
+    ntd.appendChild(ta);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn narr-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = () => saveNarrative(row, ta.value, statusDiv);
+    ntd.appendChild(saveBtn);
+
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'narr-status';
+    ntd.appendChild(statusDiv);
+
+    tr.appendChild(ntd);
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Save narrative ───────────────────────────────────────────────
+async function saveNarrative(row, text, statusEl) {
+  statusEl.textContent = 'Saving…'; statusEl.className = 'narr-status';
+  try {
+    const res = await fetch('/api/narrative', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        student_id: row.student_id,
+        session_id: row.session_id,
+        narrative_text: text,
+        narrative_attribution: currentUser ? currentUser.displayName : '',
+        band_label: row.band_label,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.textContent = '✓ Saved'; statusEl.className = 'narr-status ok';
+      row.narrative_text = text;
+    } else {
+      statusEl.textContent = data.error || 'Save failed'; statusEl.className = 'narr-status err';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Network error'; statusEl.className = 'narr-status err';
+  }
+}
+
+// ── Generate PDFs ────────────────────────────────────────────────
+let pollTimer = null;
+
+async function generatePDFs() {
+  const btn = document.getElementById('genBtn');
+  const status = document.getElementById('genStatus');
+  btn.disabled = true; status.textContent = 'Dispatching…'; status.className = 'gen-status';
+
+  // Get session_id from the first row
+  const sessionId = currentRows.length ? currentRows[0].session_id : document.getElementById('fSession').value.trim();
+  if (!sessionId) { status.textContent = 'No session ID'; status.className = 'gen-status err'; btn.disabled = false; return; }
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Dispatch failed');
+
+    if (data.run_id) {
+      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">view run</a>`;
+      pollStatus(data.run_id);
+    } else {
+      status.textContent = 'Dispatched (finding run…)';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    status.textContent = err.message; status.className = 'gen-status err';
+    btn.disabled = false;
+  }
+}
+
+function pollStatus(runId) {
+  const status = document.getElementById('genStatus');
+  const btn = document.getElementById('genBtn');
+
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/generate/status?run_id=${runId}`, { credentials:'same-origin' });
+      const data = await res.json();
+      if (data.status === 'completed') {
+        clearInterval(pollTimer);
+        btn.disabled = false;
+        if (data.conclusion === 'success') {
+          status.innerHTML = `✓ Complete — <a href="${data.run_url}" target="_blank">download artifacts</a>`;
+          status.className = 'gen-status ok';
+        } else {
+          status.textContent = `✗ Failed (${data.conclusion})`;
+          status.className = 'gen-status err';
+        }
+      } else {
+        status.textContent = `Status: ${data.status}…`;
+      }
+    } catch (_) {
+      status.textContent = 'Poll error — retrying…';
+    }
+  }, 5000);
+}
+</script>
+</body>
+</html>

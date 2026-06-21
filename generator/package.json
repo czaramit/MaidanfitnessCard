@@ -1,0 +1,14 @@
+{
+  "name": "maidan-fitnesscard-generator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-all.js",
+    "test": "node generate-card.js data/sample_senior.json --out out/"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "puppeteer-core": "^23.0.0",
+    "qrcode": "^1.5.3"
+  }
+}
