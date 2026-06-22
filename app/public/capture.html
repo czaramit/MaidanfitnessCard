@@ -135,6 +135,125 @@
   .sync-status.ok{color:var(--ok);}
   .sync-status.err{color:var(--err);}
   .sync-status.sending{color:var(--warn);}
+
+  /* ── MOBILE LAYOUT (≤720px) ─────────────────────────────────────── */
+  @media(max-width:720px){
+    body{padding:0;padding-bottom:120px;}
+    header{padding:10px 14px;}
+    header .wm .name{font-size:14px;}
+    header .wm .sub{font-size:9px;}
+    header .wm .mark{width:28px;height:28px;border-radius:5px;}
+    header .wm .mark span{font-size:15px;}
+    .phase{display:none;}
+    .banner{padding:7px 14px;font-size:10px;line-height:1.4;}
+
+    /* setup row: 2-column grid */
+    .setup{padding:10px 12px;gap:8px;display:grid;grid-template-columns:1fr 1fr;}
+    .setup .fld{min-width:0;}
+    .setup .fld:last-child{grid-column:1/-1;}
+    .setup label{font-size:9px;}
+    .setup select,.setup input[type=text],.setup input[type=date]{
+      min-width:0;width:100%;font-size:13px;padding:10px 10px;}
+    .sess-display{font-size:10px;padding:8px 10px;overflow:hidden;text-overflow:ellipsis;}
+
+    /* station tabs: horizontal scroll */
+    .tabs{padding:8px 12px 4px;overflow-x:auto;flex-wrap:nowrap;
+      -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;gap:6px;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{white-space:nowrap;flex:0 0 auto;padding:8px 14px;font-size:10px;scroll-snap-align:start;}
+
+    /* main area: single column, extra bottom padding for nav bars */
+    main{grid-template-columns:1fr!important;padding:8px 12px 10px;gap:8px;max-width:100%;}
+
+    /* hide desktop roster panel on mobile */
+    .roster-panel-desktop{display:none!important;}
+
+    /* ── kid carousel ── */
+    .kid-carousel{
+      display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      padding:6px 12px;scroll-snap-type:x proximity;
+      background:var(--ink-950);border-bottom:1px solid var(--rule);
+      position:sticky;top:52px;z-index:8;
+    }
+    .kid-carousel::-webkit-scrollbar{display:none;}
+    .kid-pill{
+      flex:0 0 auto;scroll-snap-align:start;
+      padding:8px 14px;border-radius:20px;border:1px solid var(--rule);
+      background:var(--ink-800);color:var(--ink-200);
+      font-size:12px;white-space:nowrap;cursor:pointer;
+      display:flex;align-items:center;gap:6px;
+      transition:all .12s;
+    }
+    .kid-pill.active{border-color:var(--br-500);color:var(--br-100);background:rgba(201,154,78,.10);}
+    .kid-pill .pill-dot{width:7px;height:7px;border-radius:50%;background:var(--ink-700);border:1px solid var(--rule);}
+    .kid-pill .pill-dot.done{background:var(--ok);border-color:var(--ok);}
+    .kid-pill .pill-dot.part{background:var(--warn);border-color:var(--warn);}
+
+    /* ── drill card (one at a time on mobile) ── */
+    .mob-drill-wrapper{position:relative;}
+    .mob-drill-card{display:none;}
+    .mob-drill-card.active{display:block;}
+    .mob-drill-counter{
+      text-align:center;padding:8px;font-size:11px;color:var(--ink-200);
+      font-family:'JetBrains Mono',monospace;letter-spacing:.1em;
+    }
+
+    /* bigger touch targets inside drill cards on mobile */
+    .mob-drill-card .stepper button{width:54px;height:56px;font-size:24px;}
+    .mob-drill-card .stepper input{width:80px;height:56px;font-size:22px;}
+    .mob-drill-card .numin{width:100%;height:56px;font-size:22px;}
+    .mob-drill-card .entry{flex-direction:column;align-items:stretch;gap:12px;}
+    .mob-drill-card .try{flex-direction:row;align-items:center;gap:10px;}
+    .mob-drill-card .try .lab{font-size:10px;min-width:44px;}
+    .mob-drill-card .stepper{flex:1;}
+    .mob-drill-card .best{width:100%;margin-top:6px;font-size:14px;text-align:center;}
+    .mob-drill-card .statusrow{margin-top:14px;gap:6px;}
+    .mob-drill-card .sbtn{padding:12px 14px;font-size:12px;flex:1 1 calc(50% - 3px);text-align:center;}
+    .mob-drill-card .flags{margin-top:10px;gap:6px;}
+    .mob-drill-card .flag{padding:8px 12px;font-size:11px;}
+    .mob-drill-card .warnmsg{font-size:12px;line-height:1.45;margin-top:10px;}
+    .mob-drill-card .item{padding:16px 14px;border-bottom:none;}
+    .mob-drill-card .item-h{margin-bottom:14px;}
+    .mob-drill-card .item-h .in{font-size:17px;}
+    .mob-drill-card select{padding:12px;font-size:14px;width:100%;}
+
+    /* ── mobile bottom nav — fixed above sync bar ── */
+    .mob-nav{
+      position:fixed;left:0;right:0;bottom:48px;z-index:9;
+      background:var(--ink-950);border-top:1px solid var(--rule);
+      padding:8px 12px;display:flex;gap:7px;
+    }
+    .mnav-btn{
+      flex:1;padding:14px 10px;border-radius:9px;cursor:pointer;
+      font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em;
+      font-size:11px;border:1px solid var(--rule);color:var(--ink-100);background:var(--ink-800);
+    }
+    .mnav-btn:disabled{opacity:.3;cursor:not-allowed;}
+    .mnav-btn.primary{background:var(--grad);color:var(--ink-950);border:none;font-weight:600;flex:2;}
+
+    /* compact sync bar on mobile */
+    .syncbar{padding:6px 12px;gap:6px;flex-wrap:wrap;bottom:0;}
+    .syncbar .stat{font-size:10px;line-height:1.3;}
+    .syncbar .btn{padding:8px 12px;font-size:9.5px;letter-spacing:.06em;}
+
+    .cap-empty{padding:28px 18px;font-size:13px;}
+    .cap-h .nm{font-size:18px;}
+    .cap-h{padding:14px;}
+
+    /* engagement table: horizontal scroll */
+    .panel:has(table.eg){overflow-x:auto;}
+    table.eg{min-width:540px;}
+
+    /* hide savebar on mobile — we use mob-nav instead */
+    .savebar{display:none!important;}
+  }
+
+  /* hide mobile-only elements on desktop */
+  @media(min-width:721px){
+    .kid-carousel{display:none!important;}
+    .mob-nav{display:none!important;}
+    .mob-drill-counter{display:none!important;}
+  }
 </style>
 </head>
 <body>
@@ -191,7 +310,15 @@
 </div>
 
 <div class="tabs" id="tabs"></div>
+<div class="kid-carousel" id="kidCarousel"></div>
 <main id="main"></main>
+
+<!-- ── MOBILE BOTTOM NAV ── -->
+<div class="mob-nav" id="mobNav">
+  <button class="mnav-btn" id="mobPrev" onclick="mobDrill(-1)">◀ Prev</button>
+  <button class="mnav-btn primary" id="mobSave" onclick="mobSaveNext()">Save &amp; next</button>
+  <button class="mnav-btn" id="mobNext" onclick="mobDrill(1)">Next ▶</button>
+</div>
 
 <!-- ── HQ SYNC BAR ── -->
 <div class="syncbar">
@@ -330,7 +457,10 @@ let state = {
   growth:{},      // key: student_id → {height_cm, weight_kg}
   draft:{},       // transient: student_id|drill_id → {a1,a2,status,reason,flags[]}
   engTab:false,
+  drillIdx:0,     // mobile: which drill is visible (0-based)
 };
+
+function isMobile(){return window.innerWidth<=720;}
 ROSTER = (window.ROSTER_BY_BAND || {})[state.band] || [];
 
 // ── init ──────────────────────────────────────────────────────────
@@ -340,7 +470,7 @@ Object.keys(CONFIG).forEach(b=>{
 });
 bandSel.value = state.band;
 bandSel.onchange = ()=>{
-  state.band=bandSel.value; state.station=null; state.activeKid=null; state.engTab=false;
+  state.band=bandSel.value; state.station=null; state.activeKid=null; state.engTab=false; state.drillIdx=0;
   ROSTER = (window.ROSTER_BY_BAND || {})[state.band] || [];
   state.results={}; state.engagement={}; state.growth={}; state.draft={};
   refreshSessionId(); renderTabs(); renderMain();
@@ -357,7 +487,7 @@ function renderTabs(){
   const tabs=document.getElementById('tabs'); tabs.innerHTML='';
   stationList().forEach(st=>{
     const b=document.createElement('button');b.className='tab'+((!state.engTab&&state.station===st)?' active':'');
-    b.textContent=st; b.onclick=()=>{state.station=st;state.engTab=false;state.activeKid=null;renderTabs();renderMain();};
+    b.textContent=st; b.onclick=()=>{state.station=st;state.engTab=false;state.activeKid=null;state.drillIdx=0;renderTabs();renderMain();};
     tabs.appendChild(b);
   });
   if(CONFIG[state.band].engagement){
@@ -381,42 +511,113 @@ function kidStatus(kid){
   if(done===0)return 'todo'; if(done<items.length)return 'part'; return 'done';
 }
 
+// ── render kid carousel (mobile) ──────────────────────────────────
+function renderCarousel(){
+  const car=document.getElementById('kidCarousel');
+  car.innerHTML='';
+  if(state.engTab) return;
+  ROSTER.forEach(k=>{
+    const ds=kidStatus(k);
+    const pill=document.createElement('div');
+    pill.className='kid-pill'+(state.activeKid===k.student_id?' active':'');
+    pill.innerHTML=`<span class="pill-dot ${ds==='done'?'done':ds==='part'?'part':''}"></span>${k.name.split(' ')[0]}`;
+    pill.onclick=()=>{state.activeKid=k.student_id;state.drillIdx=0;loadDraft(k.student_id);renderCarousel();renderMain();};
+    car.appendChild(pill);
+  });
+  // scroll active pill into view
+  requestAnimationFrame(()=>{
+    const active=car.querySelector('.kid-pill.active');
+    if(active) active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  });
+}
+
+// ── mobile drill navigation ──────────────────────────────────────
+function mobDrill(dir){
+  const items=CONFIG[state.band].stations[state.station]||[];
+  state.drillIdx=Math.max(0,Math.min(items.length-1,state.drillIdx+dir));
+  renderMain();
+}
+function mobSaveNext(){
+  if(!state.activeKid) return;
+  const kid=ROSTER.find(k=>k.student_id===state.activeKid);
+  if(kid) saveKid(kid);
+  state.drillIdx=0;
+}
+function updateMobNav(){
+  const nav=document.getElementById('mobNav');
+  if(!isMobile()||!state.activeKid||state.engTab){
+    nav.style.display='none'; return;
+  }
+  nav.style.display='flex';
+  const items=CONFIG[state.band].stations[state.station]||[];
+  document.getElementById('mobPrev').disabled=state.drillIdx<=0;
+  document.getElementById('mobNext').disabled=state.drillIdx>=items.length-1;
+}
+
 // ── main render ───────────────────────────────────────────────────
 function renderMain(){
   const main=document.getElementById('main'); main.innerHTML='';
-  if(state.engTab){renderEngagement(main);refreshCounts();return;}
+  renderCarousel();
+  if(state.engTab){renderEngagement(main);refreshCounts();updateMobNav();return;}
 
-  // roster panel
-  const rp=document.createElement('div'); rp.className='panel';
-  rp.innerHTML=`<div class="panel-h"><div class="t">Roster</div><div class="c mono">${state.station}</div></div>`;
-  ROSTER.forEach(k=>{
-    const ds=kidStatus(k);
-    const row=document.createElement('div');
-    row.className='roster-item'+(state.activeKid===k.student_id?' active':'');
-    row.innerHTML=`<div class="nm">${k.name}</div><div class="dot ${ds==='done'?'done':ds==='part'?'part':''}"></div>`;
-    row.onclick=()=>{state.activeKid=k.student_id;loadDraft(k.student_id);renderMain();};
-    rp.appendChild(row);
-  });
-  main.appendChild(rp);
+  const mobile=isMobile();
+
+  // roster panel (desktop only)
+  if(!mobile){
+    const rp=document.createElement('div'); rp.className='panel roster-panel-desktop';
+    rp.innerHTML=`<div class="panel-h"><div class="t">Roster</div><div class="c mono">${state.station}</div></div>`;
+    ROSTER.forEach(k=>{
+      const ds=kidStatus(k);
+      const row=document.createElement('div');
+      row.className='roster-item'+(state.activeKid===k.student_id?' active':'');
+      row.innerHTML=`<div class="nm">${k.name}</div><div class="dot ${ds==='done'?'done':ds==='part'?'part':''}"></div>`;
+      row.onclick=()=>{state.activeKid=k.student_id;loadDraft(k.student_id);renderMain();};
+      rp.appendChild(row);
+    });
+    main.appendChild(rp);
+  }
 
   // capture panel
   const cp=document.createElement('div'); cp.className='panel';
   if(!state.activeKid){
-    cp.innerHTML='<div class="cap-empty">Select a student from the roster to capture their results for this station.</div>';
-    main.appendChild(cp); refreshCounts(); return;
+    cp.innerHTML=`<div class="cap-empty">${mobile?'Tap a name above to start capturing.':'Select a student from the roster to capture their results for this station.'}</div>`;
+    main.appendChild(cp); refreshCounts(); updateMobNav(); return;
   }
   const kid=ROSTER.find(k=>k.student_id===state.activeKid);
   const items=CONFIG[state.band].stations[state.station];
-  cp.innerHTML=`<div class="cap-h"><div class="nm">${kid.name}</div><div class="meta mono">${state.station}</div></div>`;
-  items.forEach(it=>cp.appendChild(renderItem(kid,it)));
 
-  const sb=document.createElement('div'); sb.className='savebar';
-  sb.innerHTML=`<div class="stat" style="font-size:11px;color:var(--ink-200)">Saves &amp; syncs this student to HQ immediately.</div>`;
-  const save=document.createElement('button'); save.className='btn primary'; save.textContent='Save & next';
-  save.onclick=()=>saveKid(kid);
-  sb.appendChild(save); cp.appendChild(sb);
+  cp.innerHTML=`<div class="cap-h"><div class="nm">${kid.name}</div><div class="meta mono">${state.station}</div></div>`;
+
+  if(mobile){
+    // one drill at a time on mobile
+    if(state.drillIdx>=items.length) state.drillIdx=0;
+
+    // drill counter
+    const counter=document.createElement('div');
+    counter.className='mob-drill-counter';
+    counter.textContent=`${state.drillIdx+1} of ${items.length}`;
+    cp.appendChild(counter);
+
+    items.forEach((it,idx)=>{
+      const card=document.createElement('div');
+      card.className='mob-drill-card'+(idx===state.drillIdx?' active':'');
+      card.appendChild(renderItem(kid,it));
+      cp.appendChild(card);
+    });
+  } else {
+    // all drills visible on desktop
+    items.forEach(it=>cp.appendChild(renderItem(kid,it)));
+
+    const sb=document.createElement('div'); sb.className='savebar';
+    sb.innerHTML=`<div class="stat" style="font-size:11px;color:var(--ink-200)">Saves &amp; syncs this student to HQ immediately.</div>`;
+    const save=document.createElement('button'); save.className='btn primary'; save.textContent='Save & next';
+    save.onclick=()=>saveKid(kid);
+    sb.appendChild(save); cp.appendChild(sb);
+  }
+
   main.appendChild(cp);
   refreshCounts();
+  updateMobNav();
 }
 
 function dkey(sid,id){return sid+'|'+id;}
@@ -846,6 +1047,13 @@ document.getElementById('sessionDate').value = new Date().toISOString().slice(0,
 renderTabs();
 renderMain();
 hydrateFromHQ(); // load any existing data for this session
+
+// Re-render on orientation change / resize
+let _resizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(_resizeTimer);
+  _resizeTimer=setTimeout(()=>{renderMain();},150);
+});
 
 // ── auth check + coach label + logout ─────────────────────────────
 fetch('/api/me', {credentials:'include'})
