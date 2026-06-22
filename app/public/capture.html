@@ -586,15 +586,15 @@ function renderEngagement(main){
     const nm=document.createElement('td');nm.innerHTML=`<span style="color:var(--ink-100)">${k.name}</span>`;tr.appendChild(nm);
     ['participation','perseverance','teamwork'].forEach(pil=>{
       const td=document.createElement('td');
-      const key=k.student_id+'|'+pil;const cur=state.engagement[key]||{yn:null,bucket:''};
+      const key=k.student_id+'|'+pil;const cur=state.engagement[key]||{yn:null,time_bucket:''};
       const ynw=document.createElement('span');ynw.className='yn';
       const yb=document.createElement('button');yb.className='y'+(cur.yn===true?' on':'');yb.textContent='Yes';
       const nb=document.createElement('button');nb.className='n'+(cur.yn===false?' on':'');nb.textContent='Building';
-      yb.onclick=()=>setEng(k,pil,true,cur.bucket);
-      nb.onclick=()=>setEng(k,pil,false,cur.bucket);
+      yb.onclick=()=>setEng(k,pil,true,cur.time_bucket);
+      nb.onclick=()=>setEng(k,pil,false,cur.time_bucket)
       ynw.appendChild(yb);ynw.appendChild(nb);td.appendChild(ynw);
       const bsel=document.createElement('select');bsel.className='bucket';bsel.style.marginLeft='8px';
-      bsel.innerHTML='<option value="">min</option>'+BUCKETS[pil].map(b=>`<option ${cur.bucket===b?'selected':''}>${b}</option>`).join('');
+      bsel.innerHTML='<option value="">min</option>'+BUCKETS[pil].map(b=>`<option ${cur.time_bucket===b?'selected':''}>${b}</option>`).join('');
       bsel.onchange=()=>setEng(k,pil,cur.yn,bsel.value);
       td.appendChild(bsel);tr.appendChild(td);
     });
