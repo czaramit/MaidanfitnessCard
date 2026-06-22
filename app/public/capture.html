@@ -183,15 +183,6 @@
     </select>
   </div>
   <div class="fld">
-    <label class="mono">Captured by</label>
-    <select id="coachSel">
-      <option>Coach A</option>
-      <option>Coach B</option>
-      <option>Coach C</option>
-      <option>Floater</option>
-    </select>
-  </div>
-  <div class="fld">
     <label class="mono">Session ID</label>
     <div class="sess-display" id="sessDisplay">—</div>
     <!-- hidden input keeps sessId accessible to the rest of the code unchanged -->
@@ -204,11 +195,7 @@
 
 <!-- ── HQ SYNC BAR ── -->
 <div class="syncbar">
-  <div class="stat">
-    Saved: <b id="recCount">0</b> results &nbsp;·&nbsp;
-    Engagement: <b id="engCount">0</b> &nbsp;·&nbsp;
-    Growth: <b id="grwCount">0</b>
-  </div>
+  <div class="stat" id="captureStats">0 students captured this session</div>
   <div style="display:flex;align-items:center;gap:14px;">
     <span class="sync-status" id="syncStatus"></span>
     <button class="btn primary" id="hqBtn" onclick="sendToHQ()">Send to HQ</button>
@@ -221,6 +208,9 @@
 // ── tiny helpers ──────────────────────────────────────────────────
 function uid(p){return p+'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);}
 function now(){return new Date().toISOString();}
+
+// Coach identity — populated from JWT via /api/me at boot
+let currentCoach = '';
 
 // ── session ID generation ─────────────────────────────────────────
 const BAND_CODES = {toddler:'TOD', sub_junior:'SJR', junior:'JNR', senior:'SNR'};
@@ -417,7 +407,7 @@ function renderMain(){
   }
   const kid=ROSTER.find(k=>k.student_id===state.activeKid);
   const items=CONFIG[state.band].stations[state.station];
-  cp.innerHTML=`<div class="cap-h"><div class="nm">${kid.name}</div><div class="meta mono">${state.station} · captured by ${document.getElementById('coachSel').value}</div></div>`;
+  cp.innerHTML=`<div class="cap-h"><div class="nm">${kid.name}</div><div class="meta mono">${state.station}</div></div>`;
   items.forEach(it=>cp.appendChild(renderItem(kid,it)));
 
   const sb=document.createElement('div'); sb.className='savebar';
@@ -565,7 +555,7 @@ function saveKid(kid){
       status:d.status,
       not_attempted_reason:(d.status==='not_attempted'?(d.reason||'other'):null),
       flags:[...d.flags].concat(it.cap&&bestVal>=it.cap&&!d.flags.includes('capped')?['capped']:[]),
-      captured_by:document.getElementById('coachSel').value,
+      captured_by:currentCoach,
       captured_at:now(),
       verification_status:'pending',
       _a1:d.a1, _a2:d.a2,
@@ -622,9 +612,15 @@ function setEng(k,pil,yn,bucket){
 
 // ── counts ────────────────────────────────────────────────────────
 function refreshCounts(){
-  document.getElementById('recCount').textContent=Object.keys(state.results).length;
-  document.getElementById('engCount').textContent=Object.keys(state.engagement).length;
-  document.getElementById('grwCount').textContent=Object.keys(state.growth).length;
+  const touched = new Set();
+  Object.keys(state.results).forEach(k => touched.add(k.split('|')[0]));
+  Object.keys(state.engagement).forEach(k => touched.add(k.split('|')[0]));
+  Object.keys(state.growth).forEach(sid => touched.add(sid));
+  const total = ROSTER ? ROSTER.length : 0;
+  const label = total > 0
+    ? `${touched.size} of ${total} students captured this session`
+    : `${touched.size} students captured this session`;
+  document.getElementById('captureStats').textContent = label;
 }
 
 // ── build wide rows (matches CAPTURE_COLS in AppsScript v3) ───────
@@ -632,7 +628,7 @@ function buildWideRows(){
   const band=state.band;
   const sessId=document.getElementById('sessId').value;
   const mPoint=document.getElementById('mPointSel').value;
-  const coach=document.getElementById('coachSel').value;
+  const coach=currentCoach;
   const dateVal  = document.getElementById('sessionDate').value;
   const today    = dateVal || new Date().toISOString().slice(0,10);
 
@@ -743,11 +739,15 @@ function setSyncStatus(msg,state){
 async function hydrateFromHQ(){
   const sessId = document.getElementById('sessId').value;
   if(!sessId) return;
+  setSyncStatus('Checking for existing session data…', '');
   try {
     const res = await fetch('/api/session-status?session_id=' + encodeURIComponent(sessId));
-    if(!res.ok) return;
+    if(!res.ok){ setSyncStatus('', ''); return; }
     const data = await res.json();
-    if(!data.ok || !data.rows || !data.rows.length) return;
+    if(!data.ok || !data.rows || !data.rows.length){
+      setSyncStatus('', '');
+      return;
+    }
 
     // Reverse-map wide rows back into state
     const band = state.band;
@@ -808,9 +808,14 @@ async function hydrateFromHQ(){
 
     renderTabs();
     renderMain();
-    console.log('Hydrated', data.rows.length, 'rows from HQ');
+    const n = data.rows.length;
+    setSyncStatus(`✓ Session restored — ${n} student${n!==1?'s':''} loaded`, 'ok');
+    setTimeout(()=>setSyncStatus('',''), 4000);
+    console.log('Hydrated', n, 'rows from HQ');
   } catch(err) {
-    console.warn('Hydration skipped:', err.message);
+    setSyncStatus('Could not load previous session data', 'err');
+    setTimeout(()=>setSyncStatus('',''), 5000);
+    console.warn('Hydration failed:', err.message);
     // Not fatal — coach can still capture normally
   }
 }
@@ -826,10 +831,8 @@ hydrateFromHQ(); // load any existing data for this session
 fetch('/api/me', {credentials:'include'})
   .then(r => r.ok ? r.json() : Promise.reject())
   .then(d => {
-    document.getElementById('coachLabel').textContent = d.displayName || d.username;
-    // Lock the Captured By dropdown — authoritative value comes from JWT, not the form
-    const sel = document.getElementById('coachSel');
-    if(sel){ sel.value = d.displayName || d.username; sel.disabled = true; }
+    currentCoach = d.displayName || d.username;
+    document.getElementById('coachLabel').textContent = currentCoach;
   })
   .catch(() => { window.location.href = '/login'; });
 
