@@ -13,7 +13,7 @@ const users = [
 function getUser(username) {
   const u = users.find(u => u.username === username);
   if (!u) return null;
-  return { ...u, hash: process.env[u.hashEnv] || '' };
+  return { ...u, hash: (process.env[u.hashEnv] || '').trim() };
 }
 
 function allUsers() {
