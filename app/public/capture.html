@@ -147,7 +147,10 @@
       <div class="sub">Combine Day Capture · Coach</div>
     </div>
   </div>
-  <div class="phase mono">Phase 1 · v1.0</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="phase mono" id="coachLabel" style="color:var(--ink-200);"></span>
+    <button onclick="logout()" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--rule);color:var(--ink-200);background:transparent;">Logout</button>
+  </div>
 </header>
 
 <div class="banner">
@@ -226,9 +229,17 @@
       sel.innerHTML = `<option>${data.user.displayName}</option>`;
       sel.disabled = true;
       sel.style.opacity = '0.7';
+      // Show name in header
+      const label = document.getElementById('coachLabel');
+      if (label) label.textContent = data.user.displayName;
     }
   } catch (_) { window.location.href = '/login'; }
 })();
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+  window.location.href = '/login';
+}
 
 // ── tiny helpers ──────────────────────────────────────────────────
 function uid(p){return p+'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);}
