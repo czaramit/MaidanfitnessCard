@@ -147,10 +147,7 @@
       <div class="sub">Combine Day Capture · Coach</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span class="phase mono" id="coachLabel" style="color:var(--ink-200);"></span>
-    <button onclick="logout()" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--rule);color:var(--ink-200);background:transparent;">Logout</button>
-  </div>
+  <div class="phase mono">Phase 1 · v1.0</div>
 </header>
 
 <div class="banner">
@@ -184,7 +181,7 @@
   </div>
   <div class="fld">
     <label class="mono">Captured by</label>
-    <select id="coachSel" onchange="refreshSessionId()">
+    <select id="coachSel">
       <option>Coach A</option>
       <option>Coach B</option>
       <option>Coach C</option>
@@ -216,31 +213,8 @@
 </div>
 
 <!-- ─────────────────────────── SCRIPT ─────────────────────────── -->
+<script src="/roster.js"></script>
 <script>
-// ── session check — redirect to /login if not authenticated ──────
-(async function checkSession(){
-  try {
-    const res = await fetch('/api/me', { credentials: 'same-origin' });
-    if (!res.ok) { window.location.href = '/login'; return; }
-    const data = await res.json();
-    if (data.ok && data.user) {
-      // Set coach dropdown to display name (read-only)
-      const sel = document.getElementById('coachSel');
-      sel.innerHTML = `<option>${data.user.displayName}</option>`;
-      sel.disabled = true;
-      sel.style.opacity = '0.7';
-      // Show name in header
-      const label = document.getElementById('coachLabel');
-      if (label) label.textContent = data.user.displayName;
-    }
-  } catch (_) { window.location.href = '/login'; }
-})();
-
-async function logout() {
-  await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
-  window.location.href = '/login';
-}
-
 // ── tiny helpers ──────────────────────────────────────────────────
 function uid(p){return p+'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);}
 function now(){return new Date().toISOString();}
@@ -252,8 +226,6 @@ function genSessionId(){
   const venue   = document.getElementById('venueSel').value;
   const mPoint  = document.getElementById('mPointSel').value;
   const bandCode = BAND_CODES[state.band] || state.band.toUpperCase().slice(0,3);
-  // Session ID intentionally excludes coach name — enables correct multi-coach UPSERT merging.
-  // captured_by is injected server-side from the JWT session.
   const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const dateVal = document.getElementById('sessionDate').value; // YYYY-MM-DD
   let dateStr;
@@ -353,18 +325,9 @@ const BUCKETS = {
   teamwork:['0-2','2-4','4-6','6-7'],
 };
 
-// ── HQ webhook URL — now proxied through the Express app ───────────
-const HQ_WEBHOOK_URL = '/api/capture';
-
-// ── sample roster ─────────────────────────────────────────────────
-const ROSTER = [
-  {student_id:'stu_a1',name:'Aarav Sharma',  dob:'2019'},
-  {student_id:'stu_b2',name:'Ananya Rao',    dob:'2019'},
-  {student_id:'stu_c3',name:'Vivaan Gupta',  dob:'2020'},
-  {student_id:'stu_d4',name:'Diya Nair',     dob:'2018'},
-  {student_id:'stu_e5',name:'Kabir Singh',   dob:'2019'},
-  {student_id:'stu_f6',name:'Myra Patel',    dob:'2020'},
-];
+// ── real roster — loaded from roster.js (band-keyed by enrollment) ─
+// Initialized after state is defined (see below)
+let ROSTER = [];
 
 // ── state ─────────────────────────────────────────────────────────
 let state = {
@@ -375,6 +338,7 @@ let state = {
   draft:{},       // transient: student_id|drill_id → {a1,a2,status,reason,flags[]}
   engTab:false,
 };
+ROSTER = (window.ROSTER_BY_BAND || {})[state.band] || [];
 
 // ── init ──────────────────────────────────────────────────────────
 const bandSel = document.getElementById('bandSel');
@@ -384,7 +348,10 @@ Object.keys(CONFIG).forEach(b=>{
 bandSel.value = state.band;
 bandSel.onchange = ()=>{
   state.band=bandSel.value; state.station=null; state.activeKid=null; state.engTab=false;
+  ROSTER = (window.ROSTER_BY_BAND || {})[state.band] || [];
+  state.results={}; state.engagement={}; state.growth={}; state.draft={};
   refreshSessionId(); renderTabs(); renderMain();
+  hydrateFromHQ(); // fetch existing data for this band+session
 };
 
 function stationList(){return Object.keys(CONFIG[state.band].stations);}
@@ -709,13 +676,25 @@ function buildWideRows(){
     row.narrative_text='';
     row.narrative_attribution='';
     return row;
-  });
+  }).filter(rowHasData);
+}
+
+// ── only emit rows where the coach actually entered something ────
+function rowHasData(row){
+  for(let i=1;i<=9;i++){
+    if(row['p'+i+'_value']!=='' && row['p'+i+'_value']!=null) return true;
+  }
+  if(row.height_cm!=='' && row.height_cm!=null) return true;
+  if(row.weight_kg!=='' && row.weight_kg!=null) return true;
+  for(const pil of ['participation','perseverance','teamwork']){
+    if(row['eng_'+pil+'_yn']!=='' && row['eng_'+pil+'_yn']!=null) return true;
+  }
+  return false;
 }
 
 // ── send to HQ ────────────────────────────────────────────────────
-// Uses Content-Type: text/plain to keep the request a CORS "simple request"
-// so no OPTIONS preflight is needed. Apps Script receives the JSON via
-// e.postData.contents and parses it normally.
+// POSTs to the Express /api/capture route, which proxies to Apps Script.
+// The server injects captured_by from the JWT session.
 async function sendToHQ(){
   const rows=buildWideRows();
   if(!rows.length){setSyncStatus('Nothing to send','err');return;}
@@ -725,13 +704,13 @@ async function sendToHQ(){
   setSyncStatus('Sending…','sending');
 
   try {
-    const res=await fetch(HQ_WEBHOOK_URL,{
+    const res=await fetch('/api/capture',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(rows),
-      credentials:'same-origin',  // send session cookie
     });
-    const data=await res.json();
+    let data={ok:true};
+    try{data=await res.json();}catch(_){}
 
     if(data.ok){
       const msg=data.added!=null
@@ -757,11 +736,88 @@ function setSyncStatus(msg,state){
   el.className='sync-status '+(state||'');
 }
 
+// ── hydrate from HQ — load existing session data on login ────────
+async function hydrateFromHQ(){
+  const sessId = document.getElementById('sessId').value;
+  if(!sessId) return;
+  try {
+    const res = await fetch('/api/session-status?session_id=' + encodeURIComponent(sessId));
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.ok || !data.rows || !data.rows.length) return;
+
+    // Reverse-map wide rows back into state
+    const band = state.band;
+    const allDrills = [];
+    Object.values(CONFIG[band].stations).forEach(items => {
+      items.forEach(it => { if(!it.growth) allDrills.push(it); });
+    });
+
+    data.rows.forEach(r => {
+      const sid = r.student_id;
+      if(!ROSTER.find(k => k.student_id === sid)) return; // skip students not in this band's roster
+
+      // Growth
+      if(r.height_cm !== '' && r.height_cm != null && r.height_cm !== 0){
+        state.growth[sid] = state.growth[sid] || {};
+        state.growth[sid].height_cm = parseFloat(r.height_cm);
+      }
+      if(r.weight_kg !== '' && r.weight_kg != null && r.weight_kg !== 0){
+        state.growth[sid] = state.growth[sid] || {};
+        state.growth[sid].weight_kg = parseFloat(r.weight_kg);
+      }
+
+      // Drill results p1–p9
+      for(let i = 1; i <= 9; i++){
+        const drillId = r['p'+i+'_drill_id'];
+        const val = r['p'+i+'_value'];
+        const status = r['p'+i+'_status'];
+        if(!drillId || (val === '' && status === '')) continue;
+        const key = sid + '|' + drillId;
+        state.results[key] = {
+          result_id: 'hq_' + sid + '_p' + i,
+          session_id: r.session_id,
+          student_id: sid,
+          drill_id: drillId,
+          value: val === '' ? null : parseFloat(val),
+          status: status || 'completed',
+          flags: (r['p'+i+'_flag'] || '').split('|').filter(Boolean),
+          captured_by: r.captured_by || '',
+          _fromHQ: true,
+        };
+      }
+
+      // Engagement (Toddler)
+      ['participation','perseverance','teamwork'].forEach(pil => {
+        const yn = r['eng_'+pil+'_yn'];
+        if(yn === '' || yn == null) return;
+        state.engagement[sid + '|' + pil] = {
+          obs_id: 'hq_' + sid + '_' + pil,
+          session_id: r.session_id,
+          student_id: sid,
+          pillar: pil,
+          yn: yn === 'yes',
+          time_bucket: r['eng_'+pil+'_bucket'] || '',
+          _fromHQ: true,
+        };
+      });
+    });
+
+    renderTabs();
+    renderMain();
+    console.log('Hydrated', data.rows.length, 'rows from HQ');
+  } catch(err) {
+    console.warn('Hydration skipped:', err.message);
+    // Not fatal — coach can still capture normally
+  }
+}
+
 // ── boot ──────────────────────────────────────────────────────────
 // Seed today's date into the date picker so the session ID is valid on open
 document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
 renderTabs();
 renderMain();
+hydrateFromHQ(); // load any existing data for this session
 </script>
 </body>
 </html>
