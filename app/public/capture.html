@@ -154,7 +154,7 @@
 </header>
 
 <div class="banner">
-  Capture results for each student, then tap <b>Send to HQ</b> when the session is complete. Data goes straight to the central sheet.
+  Capture results for each student. Each <b>Save &amp; next</b> syncs that student to HQ automatically. Use <b>Send to HQ</b> at the end to confirm the full session.
 </div>
 
 <!-- ── SETUP ── -->
@@ -411,7 +411,7 @@ function renderMain(){
   items.forEach(it=>cp.appendChild(renderItem(kid,it)));
 
   const sb=document.createElement('div'); sb.className='savebar';
-  sb.innerHTML=`<div class="stat">Tap values, set status if needed, then save.</div>`;
+  sb.innerHTML=`<div class="stat" style="font-size:11px;color:var(--ink-200)">Saves &amp; syncs this student to HQ immediately.</div>`;
   const save=document.createElement('button'); save.className='btn primary'; save.textContent='Save & next';
   save.onclick=()=>saveKid(kid);
   sb.appendChild(save); cp.appendChild(sb);
@@ -528,6 +528,25 @@ function renderItem(kid,it){
   return wrap;
 }
 
+// ── silent background sync — called after each student save ──────
+// Persists whatever is in state to HQ without touching the Send button UI.
+// Errors are swallowed silently; the manual Send to HQ button is still the
+// authoritative sync — this just makes every "Save & next" immediately durable.
+async function silentSync(){
+  const rows = buildWideRows();
+  if(!rows.length) return;
+  try {
+    await fetch('/api/capture', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(rows),
+    });
+  } catch(e) {
+    // Offline or network error — data is still in local state.
+    // Coach can hit Send to HQ manually when back online.
+  }
+}
+
 // ── save kid ──────────────────────────────────────────────────────
 function saveKid(kid){
   const items=CONFIG[state.band].stations[state.station];
@@ -564,6 +583,7 @@ function saveKid(kid){
   });
   const idx=ROSTER.findIndex(k=>k.student_id===kid.student_id);
   state.activeKid=idx<ROSTER.length-1?ROSTER[idx+1].student_id:null;
+  silentSync(); // persist this student to HQ immediately
   renderMain();
 }
 
