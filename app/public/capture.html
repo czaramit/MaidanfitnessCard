@@ -147,7 +147,10 @@
       <div class="sub">Combine Day Capture · Coach</div>
     </div>
   </div>
-  <div class="phase mono">Phase 1 · v1.0</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+  <span class="mono" style="font-size:11px;color:var(--ink-200);" id="coachLabel">—</span>
+  <button class="btn ghost" id="logoutBtn" style="font-size:11px;padding:7px 14px;">Logout</button>
+</div>
 </header>
 
 <div class="banner">
@@ -350,6 +353,21 @@ bandSel.onchange = ()=>{
   state.band=bandSel.value; state.station=null; state.activeKid=null; state.engTab=false;
   ROSTER = (window.ROSTER_BY_BAND || {})[state.band] || [];
   state.results={}; state.engagement={}; state.growth={}; state.draft={};
+  // ── auth check + coach label ───────────────────────────────────────
+fetch('/api/me', { credentials: 'include' })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => {
+    document.getElementById('coachLabel').textContent = d.displayName || d.username;
+    // Lock the captured-by dropdown — value is authoritative from JWT
+    const sel = document.getElementById('coachSel');
+    if (sel) { sel.value = d.displayName || d.username; sel.disabled = true; }
+  })
+  .catch(() => { window.location.href = '/login'; });
+
+document.getElementById('logoutBtn').onclick = async () => {
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/login';
+};
   refreshSessionId(); renderTabs(); renderMain();
   hydrateFromHQ(); // fetch existing data for this band+session
 };
