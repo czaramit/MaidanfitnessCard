@@ -20,7 +20,7 @@ app.use('/api', require('./routes/login'));
 
 // ── Protected routes ────────────────────────────────────────────
 app.use('/api', authenticate, require('./routes/capture'));
-app.use('/api/session-status', require('./routes/session-status'));
+app.use('/api/session-status', authenticate, require('./routes/session-status'));
 app.use('/api', authenticate, require('./routes/data'));
 app.use('/api', authenticate, require('./routes/narrative'));
 app.use('/api', authenticate, require('./routes/generate'));
