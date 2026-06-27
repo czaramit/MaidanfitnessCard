@@ -82,7 +82,7 @@
   .item-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
   .item-h .in{font-family:'Fraunces',serif;font-size:16px;color:var(--ink-100);}
   .item-h .alias{font-size:11px;color:var(--br-300);font-style:italic;margin-left:6px;}
-  .item-h .unit{font-size:10px;color:var(--ink-200);}
+  .item-h .unit{font-size:14px;color:var(--br-200);font-weight:500;}
 
   .entry{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .try{display:flex;flex-direction:column;gap:4px;align-items:center;}
@@ -101,8 +101,12 @@
   .sbtn.on.na{border-color:var(--err);color:#e7a99e;background:rgba(197,107,92,.12);}
 
   .flags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .flags.collapsed{display:none;}
   .flag{font-size:10px;padding:5px 10px;border:1px dashed var(--rule);border-radius:14px;color:var(--ink-200);cursor:pointer;}
   .flag.on{border-style:solid;border-color:var(--br-500);color:var(--br-100);}
+  .tags-toggle{font-size:11px;padding:6px 12px;border:1px solid var(--rule);border-radius:14px;background:transparent;color:var(--ink-200);cursor:pointer;margin-top:10px;display:inline-flex;align-items:center;gap:4px;}
+  .tags-toggle .tag-count{background:var(--br-700);color:var(--br-100);font-size:9px;padding:1px 6px;border-radius:8px;font-family:'JetBrains Mono',monospace;}
+  .drill-desc{font-size:12px;color:var(--ink-200);font-style:italic;margin-bottom:10px;line-height:1.4;}
 
   .warnmsg{font-size:11px;color:var(--warn);margin-top:8px;}
   .savebar{padding:16px 18px;display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--rule);}
@@ -243,72 +247,72 @@ const CONFIG = {
   toddler: { label:'Toddler · 5–7 · Play Report', engagement:true,
     stations:{
       'Registration':[
-        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:80,max:150,attempts:1,dir:'higher',growth:true},
-        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:12,max:45,attempts:1,dir:'higher',growth:true,priv:true},
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:80,max:150,attempts:1,dir:'higher',growth:true,desc:'Stand barefoot against the wall, heels together. Measure to the top of the head.'},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:12,max:45,attempts:1,dir:'higher',growth:true,priv:true,desc:'Weigh in light clothing, shoes off. Record to one decimal.'},
       ],
       'Station 1':[
-        {id:'frog_jumps',label:'Jumping',alias:'Frog jumps',unit:'cm',type:'int',min:30,max:200,attempts:2,dir:'higher'},
-        {id:'flamingo_stand',label:'Balance',alias:'Flamingo stand',unit:'sec',type:'dec',min:0,max:30,attempts:1,dir:'higher',cap:30},
+        {id:'frog_jumps',label:'Jumping',alias:'Frog jumps',unit:'cm',type:'int',min:30,max:200,attempts:2,dir:'higher',desc:'Two-footed jump from standing. Measure from start line to back of nearest heel.'},
+        {id:'flamingo_stand',label:'Balance',alias:'Flamingo stand',unit:'sec',type:'dec',min:0,max:30,attempts:1,dir:'higher',cap:30,desc:'Stand on one foot, eyes open. Timer stops when foot touches ground or 30 seconds.'},
       ],
       'Station 2':[
-        {id:'tiger_run',label:'Running',alias:'Tiger run',unit:'sec',type:'dec',min:2.5,max:8,attempts:2,dir:'lower'},
-        {id:'snake_dribble',label:'Ball play',alias:'Snake dribble',unit:'sec',type:'dec',min:6,max:45,attempts:1,dir:'lower'},
+        {id:'tiger_run',label:'Running',alias:'Tiger run',unit:'sec',type:'dec',min:2.5,max:8,attempts:2,dir:'lower',desc:'Sprint between two cones 10m apart. Start on whistle, time to chest crossing finish line.'},
+        {id:'snake_dribble',label:'Ball play',alias:'Snake dribble',unit:'sec',type:'dec',min:6,max:45,attempts:1,dir:'lower',desc:'Dribble ball through cone slalom and back. Time from start to crossing finish line.'},
       ],
     }},
   sub_junior: { label:'Sub Junior · 8–11 · Fitness Snapshot', engagement:false,
     stations:{
       'Registration':[
-        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:110,max:175,attempts:1,dir:'higher',growth:true},
-        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:18,max:70,attempts:1,dir:'higher',growth:true,priv:true},
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:110,max:175,attempts:1,dir:'higher',growth:true,desc:'Stand barefoot against the wall, heels together. Measure to the top of the head.'},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:18,max:70,attempts:1,dir:'higher',growth:true,priv:true,desc:'Weigh in light clothing, shoes off. Record to one decimal.'},
       ],
-      'Station 1':[{id:'standing_long_jump',label:'Power · standing long jump',unit:'cm',type:'int',min:50,max:250,attempts:2,dir:'higher'}],
-      'Station 2':[{id:'sprint_20m',label:'Speed · 20m sprint',unit:'sec',type:'dec',min:3,max:8,attempts:2,dir:'lower'}],
+      'Station 1':[{id:'standing_long_jump',label:'Power · standing long jump',unit:'cm',type:'int',min:50,max:250,attempts:2,dir:'higher',desc:'Two-footed jump from standing start. Measure from line to back of nearest heel on landing.'}],
+      'Station 2':[{id:'sprint_20m',label:'Speed · 20m sprint',unit:'sec',type:'dec',min:3,max:8,attempts:2,dir:'lower',desc:'Sprint 20m from standing start. Time from first movement to chest crossing finish line.'}],
       'Station 3':[
-        {id:'agility_shuttle',label:'Agility · 4×10m shuttle',unit:'sec',type:'dec',min:9,max:20,attempts:1,dir:'lower'},
-        {id:'single_leg_stand',label:'Balance · single-leg stand',unit:'sec',type:'dec',min:0,max:45,attempts:1,dir:'higher'},
+        {id:'agility_shuttle',label:'Agility · 4×10m shuttle',unit:'sec',type:'dec',min:9,max:20,attempts:1,dir:'lower',desc:'Run 4 lengths of 10m, touching the line each turn. Time from start to final line cross.'},
+        {id:'single_leg_stand',label:'Balance · single-leg stand',unit:'sec',type:'dec',min:0,max:45,attempts:1,dir:'higher',desc:'Stand on one foot, eyes open. Timer stops when foot touches ground or 45 seconds.'},
       ],
-      'Station 4':[{id:'cone_dribble',label:'Ball coord · 5-cone dribble',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower'}],
-      'Endurance':[{id:'endurance_run',label:'Endurance · timed run',unit:'sec',type:'dec',min:120,max:600,attempts:1,dir:'lower'}],
+      'Station 4':[{id:'cone_dribble',label:'Ball coord · 5-cone dribble',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower',desc:'Dribble through 5 cones and back. Time from start to ball crossing finish line.'}],
+      'Endurance':[{id:'endurance_run',label:'Endurance · timed run',unit:'sec',type:'dec',min:120,max:600,attempts:1,dir:'lower',desc:'Continuous run for set distance. Record total time in seconds.'}],
     }},
   junior: { label:'Junior · 12–15 · Fitness Snapshot', engagement:false,
     stations:{
       'Registration':[
-        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:130,max:195,attempts:1,dir:'higher',growth:true},
-        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:28,max:95,attempts:1,dir:'higher',growth:true,priv:true},
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:130,max:195,attempts:1,dir:'higher',growth:true,desc:'Stand barefoot against the wall, heels together. Measure to the top of the head.'},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:28,max:95,attempts:1,dir:'higher',growth:true,priv:true,desc:'Weigh in light clothing, shoes off. Record to one decimal.'},
       ],
-      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:200,max:900,attempts:2,dir:'higher'}],
-      'Station 2':[{id:'out_and_back_40m',label:'Speed · 40m out-and-back',unit:'sec',type:'dec',min:8,max:20,attempts:2,dir:'lower'}],
+      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:200,max:900,attempts:2,dir:'higher',desc:'Three consecutive single-leg hops (alternating). Measure total distance from start to final landing.'}],
+      'Station 2':[{id:'out_and_back_40m',label:'Speed · 40m out-and-back',unit:'sec',type:'dec',min:8,max:20,attempts:2,dir:'lower',desc:'Sprint 20m, touch the line, sprint back. Time from start to chest crossing finish.'}],
       'Station 3':[
-        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:8,max:20,attempts:1,dir:'lower'},
-        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:5,max:15,attempts:1,dir:'lower'},
+        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:8,max:20,attempts:1,dir:'lower',desc:'Run forward, shuffle left-right across the T-bar, backpedal to start. Time full circuit.'},
+        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:5,max:15,attempts:1,dir:'lower',desc:'Side-shuffle between cones 5m apart, 4 lengths. Touch line each turn.'},
       ],
-      'Station 4':[{id:'slalom',label:'Ball coord · slalom',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower'}],
+      'Station 4':[{id:'slalom',label:'Ball coord · slalom',unit:'sec',type:'dec',min:8,max:40,attempts:1,dir:'lower',desc:'Dribble through slalom cones and back. Time from start to ball crossing finish line.'}],
       'Block B':[
-        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-10,max:40,attempts:2,dir:'higher'},
-        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:80,attempts:1,dir:'higher'},
-        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180},
+        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-10,max:40,attempts:2,dir:'higher',desc:'Sit with legs extended, reach forward along ruler. Record farthest reach in cm.'},
+        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:80,attempts:1,dir:'higher',desc:'Max push-ups in 60 seconds. Full extension, chest to fist height. Count completed reps.'},
+        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180,desc:'Hold forearm plank. Time stops when hips drop or 3 minutes reached.'},
       ],
-      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:480,attempts:1,dir:'lower'}],
+      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:480,attempts:1,dir:'lower',desc:'Run 800m on track. Record total time in seconds.'}],
     }},
   senior: { label:'Senior · 16–18 · Fitness Snapshot', engagement:false,
     stations:{
       'Registration':[
-        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:140,max:205,attempts:1,dir:'higher',growth:true},
-        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:35,max:110,attempts:1,dir:'higher',growth:true,priv:true},
+        {id:'height_cm',label:'Height',unit:'cm',type:'int',min:140,max:205,attempts:1,dir:'higher',growth:true,desc:'Stand barefoot against the wall, heels together. Measure to the top of the head.'},
+        {id:'weight_kg',label:'Weight',unit:'kg',type:'dec',min:35,max:110,attempts:1,dir:'higher',growth:true,priv:true,desc:'Weigh in light clothing, shoes off. Record to one decimal.'},
       ],
-      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:300,max:1000,attempts:2,dir:'higher'}],
-      'Station 2':[{id:'sprint_30m',label:'Speed · 30m sprint',unit:'sec',type:'dec',min:3.5,max:8,attempts:2,dir:'lower'}],
+      'Station 1':[{id:'triple_hop',label:'Power · triple hop',unit:'cm',type:'int',min:300,max:1000,attempts:2,dir:'higher',desc:'Three consecutive single-leg hops (alternating). Measure total distance from start to final landing.'}],
+      'Station 2':[{id:'sprint_30m',label:'Speed · 30m sprint',unit:'sec',type:'dec',min:3.5,max:8,attempts:2,dir:'lower',desc:'Sprint 30m from standing start. Time from first movement to chest crossing finish line.'}],
       'Station 3':[
-        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:7.5,max:18,attempts:1,dir:'lower'},
-        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:4.5,max:12,attempts:1,dir:'lower'},
+        {id:'t_test',label:'Agility · T-test',unit:'sec',type:'dec',min:7.5,max:18,attempts:1,dir:'lower',desc:'Run forward, shuffle left-right across the T-bar, backpedal to start. Time full circuit.'},
+        {id:'lateral_shuffle',label:'Agility · lateral shuffle 4×5m',unit:'sec',type:'dec',min:4.5,max:12,attempts:1,dir:'lower',desc:'Side-shuffle between cones 5m apart, 4 lengths. Touch line each turn.'},
       ],
-      'Station 4':[{id:'long_pass',label:'Ball coord · long-pass (hits / 5)',unit:'hits',type:'int',min:0,max:5,attempts:1,dir:'higher'}],
+      'Station 4':[{id:'long_pass',label:'Ball coord · long-pass (hits / 5)',unit:'hits',type:'int',min:0,max:5,attempts:1,dir:'higher',desc:'5 long passes to a target zone. Count how many land inside the zone.'}],
       'Block B':[
-        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-5,max:45,attempts:2,dir:'higher'},
-        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:100,attempts:1,dir:'higher'},
-        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180},
+        {id:'sit_and_reach',label:'Mobility · sit-and-reach',unit:'cm',type:'int',min:-5,max:45,attempts:2,dir:'higher',desc:'Sit with legs extended, reach forward along ruler. Record farthest reach in cm.'},
+        {id:'pushups_60s',label:'Strength · push-ups 60s',unit:'count',type:'int',min:0,max:100,attempts:1,dir:'higher',desc:'Max push-ups in 60 seconds. Full extension, chest to fist height. Count completed reps.'},
+        {id:'plank',label:'Strength · plank (cap 3:00)',unit:'sec',type:'dec',min:5,max:180,attempts:1,dir:'higher',cap:180,desc:'Hold forearm plank. Time stops when hips drop or 3 minutes reached.'},
       ],
-      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:420,attempts:1,dir:'lower'}],
+      'Block C':[{id:'run_800m',label:'Endurance · 800m',unit:'sec',type:'dec',min:150,max:420,attempts:1,dir:'lower',desc:'Run 800m on track. Record total time in seconds.'}],
     }},
 };
 
@@ -439,7 +443,7 @@ function renderItem(kid,it){
   const d=state.draft[k];
   const aliasH=it.alias?`<span class="alias">"${it.alias}"</span>`:'';
   const privH=it.priv?' · <span style="color:var(--ink-200)">enter privately</span>':'';
-  wrap.innerHTML=`<div class="item-h"><div class="in">${it.label}${aliasH}</div><div class="unit mono">${it.unit}${it.attempts===2?' · best of 2':''}${privH}</div></div>`;
+  wrap.innerHTML=`<div class="item-h"><div class="in">${it.label}${aliasH}</div><div class="unit mono">${it.unit}${it.attempts===2?' · best of 2':''}${privH}</div></div>${it.desc?'<div class="drill-desc">'+it.desc+'</div>':''}`;
 
   const entry=document.createElement('div'); entry.className='entry';
 
@@ -500,14 +504,20 @@ function renderItem(kid,it){
     }
   }
 
-  // flags
-  const fl=document.createElement('div');fl.className='flags';
+  // tags (collapsible flags)
+  const activeCount = d.flags.length;
+  const tagsBtn = document.createElement('button');
+  tagsBtn.className = 'tags-toggle';
+  tagsBtn.innerHTML = '+ Tags' + (activeCount > 0 ? ' <span class="tag-count">' + activeCount + '</span>' : '');
+  const fl=document.createElement('div');fl.className='flags collapsed';
+  tagsBtn.onclick = () => { fl.classList.toggle('collapsed'); tagsBtn.textContent = fl.classList.contains('collapsed') ? '+ Tags' : '− Tags'; if(activeCount>0 && fl.classList.contains('collapsed')){tagsBtn.innerHTML='+ Tags <span class="tag-count">'+d.flags.length+'</span>';} };
   ['capped','modified_form','improvised_goal','skipped_cone','running_not_dribbling'].forEach(f=>{
     const b=document.createElement('button');b.className='flag'+(d.flags.includes(f)?' on':'');
     b.textContent=f.replace(/_/g,' ');
     b.onclick=()=>{d.flags.includes(f)?d.flags.splice(d.flags.indexOf(f),1):d.flags.push(f);renderMain();};
     fl.appendChild(b);
   });
+  wrap.appendChild(tagsBtn);
   wrap.appendChild(fl);
 
   function best(){
@@ -842,7 +852,7 @@ async function hydrateFromHQ(){
 
 // ── boot ──────────────────────────────────────────────────────────
 // Seed today's date into the date picker so the session ID is valid on open
-document.getElementById('sessionDate').value = new Date().toISOString().slice(0,10);
+document.getElementById('sessionDate').value = new Date().toLocaleDateString('en-CA');
 renderTabs();
 renderMain();
 hydrateFromHQ(); // load any existing data for this session
