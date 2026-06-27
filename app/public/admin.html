@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maidan Play — Admin Dashboard</title>
+<title>The Maidan Project — Admin Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -21,8 +21,8 @@
 
   header{border-bottom:1px solid var(--rule);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--ink-950);position:sticky;top:0;z-index:10;}
   .wm{display:flex;align-items:center;gap:12px;}
-  .wm .mark{width:34px;height:34px;border-radius:7px;border:1.5px solid var(--br-500);display:grid;place-items:center;background:var(--ink-800);}
-  .wm .mark span{font-family:'Fraunces',serif;font-weight:600;font-size:18px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic;}
+  .wm .mark{width:38px;height:38px;border-radius:9px;overflow:hidden;display:block;flex-shrink:0;}
+  .wm .mark img{width:100%;height:100%;display:block;object-fit:cover;}
   .wm .name{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--white);}
   .wm .sub{font-size:11px;color:var(--br-300);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
   .hdr-right{display:flex;align-items:center;gap:14px;}
@@ -77,9 +77,9 @@
 <body>
 <header>
   <div class="wm">
-    <div class="mark"><span>M</span></div>
+    <div class="mark"><img src="/img/maidan-logo.png" alt="The Maidan Project"></div>
     <div>
-      <div class="name">Maidan Play <span style="color:var(--ink-200);font-weight:400;">× Tekkers FA</span></div>
+      <div class="name">The Maidan Project</div>
       <div class="sub">Admin Dashboard</div>
     </div>
   </div>
