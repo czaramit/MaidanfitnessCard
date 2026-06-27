@@ -49,7 +49,6 @@
   th{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;font-size:9px;color:var(--ink-200);font-weight:500;padding:10px 8px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;position:sticky;top:0;background:var(--ink-900);}
   td{padding:8px 8px;border-bottom:1px solid var(--rule);color:var(--ink-100);vertical-align:top;}
   tr:hover td{background:rgba(201,154,78,.03);}
-  tr.dup-row td{opacity:.5;font-style:italic;}
   .narr-cell{min-width:240px;max-width:340px;}
   .narr-cell textarea{width:100%;background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);border-radius:6px;font-size:12px;padding:6px 8px;font-family:'Inter',sans-serif;resize:vertical;min-height:60px;}
   .narr-cell textarea:focus{outline:none;border-color:var(--br-500);}
@@ -58,12 +57,23 @@
   .narr-status.ok{color:var(--ok);}
   .narr-status.err{color:var(--err);}
 
+  /* Editable data cells */
+  td.editable{cursor:pointer;position:relative;}
+  td.editable:hover{background:rgba(201,154,78,.08);}
+  td.editable input{width:60px;background:var(--ink-800);border:1px solid var(--br-500);color:var(--white);padding:3px 6px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace;}
+  td.edit-saved{animation:flash-ok .6s ease;}
+  @keyframes flash-ok{0%{background:rgba(111,168,122,.3)}100%{background:transparent}}
+
+  /* Checkbox styling */
+  th.chk,td.chk{width:36px;text-align:center;}
+  input[type=checkbox]{accent-color:var(--br-300);width:15px;height:15px;cursor:pointer;}
+
   .gen-bar{position:fixed;bottom:0;left:0;right:0;background:var(--ink-950);border-top:1px solid var(--rule);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
   .gen-status{font-size:12px;color:var(--ink-200);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;}
   .gen-status.ok{color:var(--ok);}
   .gen-status.err{color:var(--err);}
   .gen-status a{color:var(--br-300);}
-  .gen-info{font-size:11px;color:var(--ink-200);}
+  .gen-info{font-size:11px;color:var(--ink-200);margin-left:8px;}
   .gen-info b{color:var(--br-100);font-family:'JetBrains Mono',monospace;}
 
   .empty{padding:48px 24px;text-align:center;color:var(--ink-200);font-size:14px;}
@@ -122,6 +132,7 @@
   <table id="dataTable" style="display:none;">
     <thead>
       <tr>
+        <th class="chk"><input type="checkbox" id="selectAll" title="Select all"></th>
         <th>Student</th><th>Band</th><th>Session</th><th>Date</th><th>Coach</th><th>Height</th><th>Weight</th>
         <th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>P6</th><th>P7</th>
         <th>Complete</th>
@@ -141,10 +152,11 @@
 </div>
 
 <script>
-let rawRows = [];       // all rows from API (may include duplicates)
-let currentRows = [];   // deduped, displayed rows
-let dupCount = 0;       // how many duplicates were collapsed
+let rawRows = [];
+let currentRows = [];
+let dupCount = 0;
 let currentUser = null;
+let selectedIds = new Set();
 
 // ── Session check ────────────────────────────────────────────────
 (async function(){
@@ -165,11 +177,11 @@ async function logout() {
 
 // ── Completeness ─────────────────────────────────────────────────
 function completeness(row) {
-  let filled = 0, total = 2; // height + weight always expected
+  let filled = 0, total = 2;
   if (row.height_cm !== '' && row.height_cm != null && row.height_cm !== 0 && row.height_cm !== '0') filled++;
   if (row.weight_kg !== '' && row.weight_kg != null && row.weight_kg !== 0 && row.weight_kg !== '0') filled++;
   for (let i = 1; i <= 7; i++) {
-    if (row['p' + i + '_drill_id']) { // slot used by this band
+    if (row['p' + i + '_drill_id']) {
       total++;
       const v = row['p' + i + '_value'];
       if (v !== '' && v != null) filled++;
@@ -180,19 +192,12 @@ function completeness(row) {
 }
 
 // ── Dedup by student_id ──────────────────────────────────────────
-// When multiple rows exist for the same student (different session_ids),
-// keep the one with the highest completeness. If tied, keep the most recent
-// by exported_at. Store the duplicate rows for reference.
 function dedup(rows) {
   const byStudent = {};
   rows.forEach(r => {
     const sid = r.student_id;
     if (!sid) return;
-    if (!byStudent[sid]) {
-      byStudent[sid] = { best: r, dupes: [] };
-      return;
-    }
-    // Compare: keep the more complete row, or more recent if tied
+    if (!byStudent[sid]) { byStudent[sid] = { best: r, dupes: [] }; return; }
     const existing = byStudent[sid].best;
     const existComp = completeness(existing).pct;
     const newComp = completeness(r).pct;
@@ -203,7 +208,6 @@ function dedup(rows) {
       byStudent[sid].dupes.push(r);
     }
   });
-
   const deduped = [];
   let totalDupes = 0;
   Object.values(byStudent).forEach(entry => {
@@ -237,6 +241,7 @@ async function loadData() {
     const result = dedup(rawRows);
     currentRows = result.deduped;
     dupCount = result.totalDupes;
+    selectedIds = new Set(currentRows.filter(r => completeness(r).pct === 100).map(r => r.student_id));
     renderTable();
   } catch (err) {
     document.getElementById('emptyMsg').textContent = 'Error: ' + err.message;
@@ -247,6 +252,24 @@ async function loadData() {
   }
 }
 
+// ── Select All ───────────────────────────────────────────────────
+document.getElementById('selectAll').onchange = function() {
+  if (this.checked) {
+    currentRows.forEach(r => selectedIds.add(r.student_id));
+  } else {
+    selectedIds.clear();
+  }
+  document.querySelectorAll('.row-chk').forEach(cb => cb.checked = this.checked);
+  updateGenInfo();
+};
+
+function toggleSelect(sid, checked) {
+  if (checked) selectedIds.add(sid); else selectedIds.delete(sid);
+  document.getElementById('selectAll').checked = selectedIds.size === currentRows.length;
+  updateGenInfo();
+}
+
+// ── Render table ─────────────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById('tbody');
   const table = document.getElementById('dataTable');
@@ -270,53 +293,63 @@ function renderTable() {
   document.getElementById('sNarr').textContent = withNarr;
   document.getElementById('sMiss').textContent = currentRows.length - withNarr;
 
-  // Duplicate warning
   const dupWarn = document.getElementById('sDupWarn');
   if (dupCount > 0) {
-    dupWarn.textContent = '· ' + dupCount + ' duplicate row' + (dupCount > 1 ? 's' : '') + ' collapsed (same student, different session)';
+    dupWarn.textContent = '· ' + dupCount + ' duplicate row' + (dupCount > 1 ? 's' : '') + ' collapsed';
     dupWarn.style.display = '';
-  } else {
-    dupWarn.style.display = 'none';
-  }
+  } else { dupWarn.style.display = 'none'; }
 
-  // Enable Generate only if at least one student is 100% complete
-  document.getElementById('genBtn').disabled = completeCount === 0;
+  document.getElementById('genBtn').disabled = selectedIds.size === 0;
   updateGenInfo();
 
   tbody.innerHTML = '';
   currentRows.forEach((row, i) => {
     const tr = document.createElement('tr');
-    const studentLabel = (row.student_name || row.student_id)
-      + (row._dupCount > 0 ? '' : '');
 
-    const vals = [
-      null, // student — handled separately below
-      row.band_label,
-      row.session_id,
-      row.combine_date || '',
-      row.captured_by,
-      row.height_cm, row.weight_kg,
-    ];
-    for (let p = 1; p <= 7; p++) vals.push(row[`p${p}_value`] || '—');
+    // Checkbox
+    const chkTd = document.createElement('td');
+    chkTd.className = 'chk';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox'; chk.className = 'row-chk';
+    chk.checked = selectedIds.has(row.student_id);
+    chk.onchange = () => toggleSelect(row.student_id, chk.checked);
+    chkTd.appendChild(chk);
+    tr.appendChild(chkTd);
 
-    // Student name cell (with optional dup badge)
+    // Student name (with dup badge)
     const nameTd = document.createElement('td');
     nameTd.textContent = row.student_name || row.student_id;
     if (row._dupCount > 0) {
       const db = document.createElement('span');
       db.className = 'dup-badge';
       db.textContent = '+' + row._dupCount + ' dup';
-      db.title = row._dupCount + ' other row(s) for this student were collapsed. Showing the most complete entry.';
+      db.title = row._dupCount + ' other row(s) collapsed. Showing most complete.';
       nameTd.appendChild(db);
     }
     tr.appendChild(nameTd);
 
-    // Remaining data cells
-    vals.slice(1).forEach(v => {
+    // Band, Session, Date, Coach (read-only)
+    [row.band_label, row.session_id, row.combine_date || '', row.captured_by].forEach(v => {
       const td = document.createElement('td');
-      td.textContent = v == null ? '' : v;
+      td.textContent = v || '';
       tr.appendChild(td);
     });
+
+    // Height + Weight (editable)
+    makeEditableCell(tr, row, 'height_cm', 'number');
+    makeEditableCell(tr, row, 'weight_kg', 'number');
+
+    // P1-P7 values (editable)
+    for (let p = 1; p <= 7; p++) {
+      const key = 'p' + p + '_value';
+      if (row['p' + p + '_drill_id']) {
+        makeEditableCell(tr, row, key, 'number');
+      } else {
+        const td = document.createElement('td');
+        td.textContent = '—';
+        tr.appendChild(td);
+      }
+    }
 
     // Completeness badge
     const comp = completeness(row);
@@ -346,20 +379,92 @@ function renderTable() {
     tr.appendChild(ntd);
     tbody.appendChild(tr);
   });
+
+  document.getElementById('selectAll').checked = selectedIds.size === currentRows.length;
+}
+
+// ── Editable data cell ───────────────────────────────────────────
+function makeEditableCell(tr, row, key, type) {
+  const td = document.createElement('td');
+  td.className = 'editable';
+  const val = row[key];
+  td.textContent = (val !== '' && val != null) ? val : '—';
+  td.title = 'Click to edit';
+
+  td.onclick = function() {
+    if (td.querySelector('input')) return; // already editing
+    const inp = document.createElement('input');
+    inp.type = type || 'text';
+    inp.step = 'any';
+    inp.value = (val !== '' && val != null) ? val : '';
+    td.textContent = '';
+    td.appendChild(inp);
+    inp.focus();
+    inp.select();
+
+    function commit() {
+      const newVal = inp.value.trim();
+      row[key] = newVal === '' ? '' : (type === 'number' ? parseFloat(newVal) : newVal);
+      td.textContent = newVal || '—';
+      td.classList.add('edit-saved');
+      setTimeout(() => td.classList.remove('edit-saved'), 700);
+      // Recalculate completeness and update stats
+      renderStats();
+      // Save to HQ
+      saveDataEdit(row, key, row[key]);
+    }
+
+    inp.onblur = commit;
+    inp.onkeydown = function(e) {
+      if (e.key === 'Enter') { inp.blur(); }
+      if (e.key === 'Escape') { td.textContent = (val !== '' && val != null) ? val : '—'; }
+    };
+  };
+  tr.appendChild(td);
+}
+
+function renderStats() {
+  const withNarr = currentRows.filter(r => r.narrative_text && r.narrative_text.trim()).length;
+  const completeCount = currentRows.filter(r => completeness(r).pct === 100).length;
+  document.getElementById('sTotal').textContent = currentRows.length;
+  document.getElementById('sComplete').textContent = completeCount;
+  document.getElementById('sNarr').textContent = withNarr;
+  document.getElementById('sMiss').textContent = currentRows.length - withNarr;
+  updateGenInfo();
+}
+
+// ── Save data edit to HQ ─────────────────────────────────────────
+// Re-sends the full row via the capture endpoint to update the sheet
+async function saveDataEdit(row, key, value) {
+  try {
+    // Build a minimal row payload for UPSERT
+    const payload = {
+      student_id: row.student_id,
+      session_id: row.session_id,
+    };
+    payload[key] = value;
+    await fetch('/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify([payload]),
+    });
+  } catch (err) {
+    console.error('Failed to save edit:', err);
+  }
 }
 
 // ── Gen bar info ─────────────────────────────────────────────────
 function updateGenInfo() {
   const info = document.getElementById('genInfo');
-  if (!currentRows.length) { info.textContent = ''; return; }
-  const ready = currentRows.filter(r => completeness(r).pct === 100).length;
-  const total = currentRows.length;
-  if (ready === 0) {
-    info.innerHTML = 'No students ready — all incomplete';
-  } else if (ready === total) {
-    info.innerHTML = 'All <b>' + total + '</b> students ready';
+  const btn = document.getElementById('genBtn');
+  if (!currentRows.length) { info.textContent = ''; btn.disabled = true; return; }
+  const selected = selectedIds.size;
+  btn.disabled = selected === 0;
+  if (selected === 0) {
+    info.textContent = 'Select students to generate PDFs';
   } else {
-    info.innerHTML = '<b>' + ready + '</b> of ' + total + ' students ready (100% data)';
+    info.innerHTML = '<b>' + selected + '</b> student' + (selected > 1 ? 's' : '') + ' selected for PDF generation';
   }
 }
 
@@ -383,10 +488,7 @@ async function saveNarrative(row, text, statusEl) {
     if (data.ok) {
       statusEl.textContent = '✓ Saved'; statusEl.className = 'narr-status ok';
       row.narrative_text = text;
-      // Update stats
-      const withNarr = currentRows.filter(r => r.narrative_text && r.narrative_text.trim()).length;
-      document.getElementById('sNarr').textContent = withNarr;
-      document.getElementById('sMiss').textContent = currentRows.length - withNarr;
+      renderStats();
     } else {
       statusEl.textContent = data.error || 'Save failed'; statusEl.className = 'narr-status err';
     }
@@ -402,27 +504,16 @@ async function generatePDFs() {
   const btn = document.getElementById('genBtn');
   const status = document.getElementById('genStatus');
 
-  // Get session_id from the first row
-  const sessionId = currentRows.length ? currentRows[0].session_id : document.getElementById('fSession').value.trim();
-  if (!sessionId) { status.textContent = 'No session ID'; status.className = 'gen-status err'; return; }
-
-  // Only generate for 100% complete students
-  const ready = currentRows.filter(r => completeness(r).pct === 100);
-  const incomplete = currentRows.filter(r => completeness(r).pct < 100);
-
-  if (ready.length === 0) {
-    alert('No students have 100% complete data. Fill in all measurements before generating PDFs.');
+  if (selectedIds.size === 0) {
+    status.textContent = 'No students selected'; status.className = 'gen-status err';
     return;
   }
 
-  if (incomplete.length > 0) {
-    const names = incomplete.map(r => r.student_name || r.student_id).join('\n  • ');
-    if (!confirm(
-      'Generating PDFs for ' + ready.length + ' complete student(s).\n\n' +
-      incomplete.length + ' student(s) will be skipped (incomplete data):\n  • ' + names +
-      '\n\nProceed?'
-    )) return;
-  }
+  const sessionId = currentRows.length ? currentRows[0].session_id : document.getElementById('fSession').value.trim();
+  if (!sessionId) { status.textContent = 'No session ID'; status.className = 'gen-status err'; return; }
+
+  const selectedNames = currentRows.filter(r => selectedIds.has(r.student_id)).map(r => r.student_name || r.student_id);
+  if (!confirm('Generate PDFs for ' + selectedIds.size + ' student(s)?\n\n' + selectedNames.join('\n'))) return;
 
   btn.disabled = true; status.textContent = 'Dispatching…'; status.className = 'gen-status';
 
@@ -442,7 +533,7 @@ async function generatePDFs() {
       localStorage.setItem('maidan_last_run_url', data.run_url || '');
       pollStatus(data.run_id);
     } else {
-      status.innerHTML = 'Dispatched — <a href="' + data.run_url + '" target="_blank">check GitHub Actions ↗</a>';
+      status.innerHTML = 'Dispatched — <a href="' + (data.run_url||'#') + '" target="_blank">check GitHub Actions ↗</a>';
       btn.disabled = false;
     }
   } catch (err) {
@@ -454,7 +545,6 @@ async function generatePDFs() {
 function pollStatus(runId) {
   const status = document.getElementById('genStatus');
   const btn = document.getElementById('genBtn');
-
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
@@ -481,8 +571,8 @@ function pollStatus(runId) {
   }, 5000);
 }
 
-// ── Restore run status from localStorage on load ─────────────────
-(function restoreRunStatus(){
+// ── Restore run status from localStorage ─────────────────────────
+(function(){
   const runId = localStorage.getItem('maidan_last_run_id');
   if (runId) {
     const status = document.getElementById('genStatus');
@@ -492,8 +582,8 @@ function pollStatus(runId) {
   }
 })();
 
-// ── Seed date filter to today ────────────────────────────────────
-document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+// ── Seed date to today ───────────────────────────────────────────
+document.getElementById('fDate').value = new Date().toLocaleDateString('en-CA');
 </script>
 </body>
 </html>
