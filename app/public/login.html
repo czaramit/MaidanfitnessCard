@@ -88,7 +88,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (data.ok) {
-      window.location.href = data.home;
+      window.location.href = data.home || (data.role === 'admin' ? '/admin' : '/capture');
     } else {
       err.textContent = data.error || 'Login failed';
     }
