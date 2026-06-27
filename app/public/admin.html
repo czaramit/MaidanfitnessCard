@@ -36,17 +36,20 @@
   .filters{padding:16px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;border-bottom:1px solid var(--rule);background:var(--ink-950);}
   .fld{display:flex;flex-direction:column;gap:4px;}
   .fld label{font-size:9px;color:var(--ink-200);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em;}
-  input[type=text],select{background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);padding:8px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;min-width:140px;}
+  input[type=text],input[type=date],select{background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);padding:8px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;min-width:140px;}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer;}
   input:focus,select:focus{outline:none;border-color:var(--br-500);}
 
-  .stats{padding:12px 24px;display:flex;gap:24px;font-size:12px;color:var(--ink-200);border-bottom:1px solid var(--rule);}
+  .stats{padding:12px 24px;display:flex;gap:24px;font-size:12px;color:var(--ink-200);border-bottom:1px solid var(--rule);flex-wrap:wrap;}
   .stats b{color:var(--br-100);font-family:'JetBrains Mono',monospace;}
+  .stats .dup-warn{color:var(--warn);}
 
   .table-wrap{overflow-x:auto;padding:0 24px 100px;}
   table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
   th{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;font-size:9px;color:var(--ink-200);font-weight:500;padding:10px 8px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;position:sticky;top:0;background:var(--ink-900);}
   td{padding:8px 8px;border-bottom:1px solid var(--rule);color:var(--ink-100);vertical-align:top;}
   tr:hover td{background:rgba(201,154,78,.03);}
+  tr.dup-row td{opacity:.5;font-style:italic;}
   .narr-cell{min-width:240px;max-width:340px;}
   .narr-cell textarea{width:100%;background:var(--ink-800);border:1px solid var(--rule);color:var(--ink-100);border-radius:6px;font-size:12px;padding:6px 8px;font-family:'Inter',sans-serif;resize:vertical;min-height:60px;}
   .narr-cell textarea:focus{outline:none;border-color:var(--br-500);}
@@ -60,12 +63,15 @@
   .gen-status.ok{color:var(--ok);}
   .gen-status.err{color:var(--err);}
   .gen-status a{color:var(--br-300);}
+  .gen-info{font-size:11px;color:var(--ink-200);}
+  .gen-info b{color:var(--br-100);font-family:'JetBrains Mono',monospace;}
 
   .empty{padding:48px 24px;text-align:center;color:var(--ink-200);font-size:14px;}
   .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;}
   .badge.full{background:rgba(111,168,122,.2);color:#9fd0aa;}
   .badge.mid{background:rgba(216,162,74,.15);color:#e0b960;}
   .badge.low{background:rgba(197,107,92,.15);color:#e7a99e;}
+  .dup-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(216,162,74,.15);color:#e0b960;margin-left:4px;}
 </style>
 </head>
 <body>
@@ -98,7 +104,7 @@
   </div>
   <div class="fld">
     <label>Date</label>
-    <input type="text" id="fDate" placeholder="2026-06-21">
+    <input type="date" id="fDate">
   </div>
   <button class="btn primary" onclick="loadData()" id="loadBtn">Load</button>
 </div>
@@ -108,6 +114,7 @@
   Complete: <b id="sComplete">0</b> &nbsp;·&nbsp;
   With narrative: <b id="sNarr">0</b> &nbsp;·&nbsp;
   Missing narrative: <b id="sMiss">0</b>
+  <span id="sDupWarn" class="dup-warn" style="display:none;"></span>
 </div>
 
 <div class="table-wrap">
@@ -115,7 +122,7 @@
   <table id="dataTable" style="display:none;">
     <thead>
       <tr>
-        <th>Student</th><th>Band</th><th>Session</th><th>Coach</th><th>Height</th><th>Weight</th>
+        <th>Student</th><th>Band</th><th>Session</th><th>Date</th><th>Coach</th><th>Height</th><th>Weight</th>
         <th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>P6</th><th>P7</th>
         <th>Complete</th>
         <th class="narr-cell">Narrative</th>
@@ -126,12 +133,17 @@
 </div>
 
 <div class="gen-bar">
-  <span class="gen-status" id="genStatus"></span>
+  <div>
+    <span class="gen-status" id="genStatus"></span>
+    <span class="gen-info" id="genInfo"></span>
+  </div>
   <button class="btn primary" id="genBtn" onclick="generatePDFs()" disabled>Generate PDFs</button>
 </div>
 
 <script>
-let currentRows = [];
+let rawRows = [];       // all rows from API (may include duplicates)
+let currentRows = [];   // deduped, displayed rows
+let dupCount = 0;       // how many duplicates were collapsed
 let currentUser = null;
 
 // ── Session check ────────────────────────────────────────────────
@@ -167,6 +179,41 @@ function completeness(row) {
   return { filled, total, pct };
 }
 
+// ── Dedup by student_id ──────────────────────────────────────────
+// When multiple rows exist for the same student (different session_ids),
+// keep the one with the highest completeness. If tied, keep the most recent
+// by exported_at. Store the duplicate rows for reference.
+function dedup(rows) {
+  const byStudent = {};
+  rows.forEach(r => {
+    const sid = r.student_id;
+    if (!sid) return;
+    if (!byStudent[sid]) {
+      byStudent[sid] = { best: r, dupes: [] };
+      return;
+    }
+    // Compare: keep the more complete row, or more recent if tied
+    const existing = byStudent[sid].best;
+    const existComp = completeness(existing).pct;
+    const newComp = completeness(r).pct;
+    if (newComp > existComp || (newComp === existComp && (r.exported_at || '') > (existing.exported_at || ''))) {
+      byStudent[sid].dupes.push(existing);
+      byStudent[sid].best = r;
+    } else {
+      byStudent[sid].dupes.push(r);
+    }
+  });
+
+  const deduped = [];
+  let totalDupes = 0;
+  Object.values(byStudent).forEach(entry => {
+    entry.best._dupCount = entry.dupes.length;
+    deduped.push(entry.best);
+    totalDupes += entry.dupes.length;
+  });
+  return { deduped, totalDupes };
+}
+
 // ── Load data ────────────────────────────────────────────────────
 async function loadData() {
   const btn = document.getElementById('loadBtn');
@@ -186,7 +233,10 @@ async function loadData() {
     const res = await fetch('/api/data?' + params, { credentials:'same-origin' });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Fetch failed');
-    currentRows = data.rows || [];
+    rawRows = data.rows || [];
+    const result = dedup(rawRows);
+    currentRows = result.deduped;
+    dupCount = result.totalDupes;
     renderTable();
   } catch (err) {
     document.getElementById('emptyMsg').textContent = 'Error: ' + err.message;
@@ -207,11 +257,11 @@ function renderTable() {
     empty.textContent = 'No rows found for those filters.';
     empty.style.display = ''; table.style.display = 'none'; stats.style.display = 'none';
     document.getElementById('genBtn').disabled = true;
+    updateGenInfo();
     return;
   }
 
   empty.style.display = 'none'; table.style.display = ''; stats.style.display = '';
-  document.getElementById('genBtn').disabled = false;
 
   const withNarr = currentRows.filter(r => r.narrative_text && r.narrative_text.trim()).length;
   const completeCount = currentRows.filter(r => completeness(r).pct === 100).length;
@@ -220,29 +270,59 @@ function renderTable() {
   document.getElementById('sNarr').textContent = withNarr;
   document.getElementById('sMiss').textContent = currentRows.length - withNarr;
 
+  // Duplicate warning
+  const dupWarn = document.getElementById('sDupWarn');
+  if (dupCount > 0) {
+    dupWarn.textContent = '· ' + dupCount + ' duplicate row' + (dupCount > 1 ? 's' : '') + ' collapsed (same student, different session)';
+    dupWarn.style.display = '';
+  } else {
+    dupWarn.style.display = 'none';
+  }
+
+  // Enable Generate only if at least one student is 100% complete
+  document.getElementById('genBtn').disabled = completeCount === 0;
+  updateGenInfo();
+
   tbody.innerHTML = '';
   currentRows.forEach((row, i) => {
     const tr = document.createElement('tr');
+    const studentLabel = (row.student_name || row.student_id)
+      + (row._dupCount > 0 ? '' : '');
+
     const vals = [
-      row.student_name || row.student_id,
+      null, // student — handled separately below
       row.band_label,
       row.session_id,
+      row.combine_date || '',
       row.captured_by,
       row.height_cm, row.weight_kg,
     ];
     for (let p = 1; p <= 7; p++) vals.push(row[`p${p}_value`] || '—');
 
-    vals.forEach(v => {
+    // Student name cell (with optional dup badge)
+    const nameTd = document.createElement('td');
+    nameTd.textContent = row.student_name || row.student_id;
+    if (row._dupCount > 0) {
+      const db = document.createElement('span');
+      db.className = 'dup-badge';
+      db.textContent = '+' + row._dupCount + ' dup';
+      db.title = row._dupCount + ' other row(s) for this student were collapsed. Showing the most complete entry.';
+      nameTd.appendChild(db);
+    }
+    tr.appendChild(nameTd);
+
+    // Remaining data cells
+    vals.slice(1).forEach(v => {
       const td = document.createElement('td');
-      td.textContent = v || '';
+      td.textContent = v == null ? '' : v;
       tr.appendChild(td);
     });
 
     // Completeness badge
-    const c = completeness(row);
+    const comp = completeness(row);
     const ctd = document.createElement('td');
-    const cls = c.pct === 100 ? 'full' : c.pct >= 50 ? 'mid' : 'low';
-    ctd.innerHTML = '<span class="badge ' + cls + '">' + c.pct + '%</span> <span style="font-size:10px;color:var(--ink-200)">' + c.filled + '/' + c.total + '</span>';
+    const cls = comp.pct === 100 ? 'full' : comp.pct >= 50 ? 'mid' : 'low';
+    ctd.innerHTML = '<span class="badge ' + cls + '">' + comp.pct + '%</span> <span style="font-size:10px;color:var(--ink-200)">' + comp.filled + '/' + comp.total + '</span>';
     tr.appendChild(ctd);
 
     // Narrative cell
@@ -268,6 +348,21 @@ function renderTable() {
   });
 }
 
+// ── Gen bar info ─────────────────────────────────────────────────
+function updateGenInfo() {
+  const info = document.getElementById('genInfo');
+  if (!currentRows.length) { info.textContent = ''; return; }
+  const ready = currentRows.filter(r => completeness(r).pct === 100).length;
+  const total = currentRows.length;
+  if (ready === 0) {
+    info.innerHTML = 'No students ready — all incomplete';
+  } else if (ready === total) {
+    info.innerHTML = 'All <b>' + total + '</b> students ready';
+  } else {
+    info.innerHTML = '<b>' + ready + '</b> of ' + total + ' students ready (100% data)';
+  }
+}
+
 // ── Save narrative ───────────────────────────────────────────────
 async function saveNarrative(row, text, statusEl) {
   statusEl.textContent = 'Saving…'; statusEl.className = 'narr-status';
@@ -288,6 +383,10 @@ async function saveNarrative(row, text, statusEl) {
     if (data.ok) {
       statusEl.textContent = '✓ Saved'; statusEl.className = 'narr-status ok';
       row.narrative_text = text;
+      // Update stats
+      const withNarr = currentRows.filter(r => r.narrative_text && r.narrative_text.trim()).length;
+      document.getElementById('sNarr').textContent = withNarr;
+      document.getElementById('sMiss').textContent = currentRows.length - withNarr;
     } else {
       statusEl.textContent = data.error || 'Save failed'; statusEl.className = 'narr-status err';
     }
@@ -305,20 +404,24 @@ async function generatePDFs() {
 
   // Get session_id from the first row
   const sessionId = currentRows.length ? currentRows[0].session_id : document.getElementById('fSession').value.trim();
-  if (!sessionId) { status.textContent = 'No session ID'; status.className = 'gen-status err'; btn.disabled = false; return; }
+  if (!sessionId) { status.textContent = 'No session ID'; status.className = 'gen-status err'; return; }
 
-  // Completeness guard — warn about incomplete students
+  // Only generate for 100% complete students
+  const ready = currentRows.filter(r => completeness(r).pct === 100);
   const incomplete = currentRows.filter(r => completeness(r).pct < 100);
+
+  if (ready.length === 0) {
+    alert('No students have 100% complete data. Fill in all measurements before generating PDFs.');
+    return;
+  }
+
   if (incomplete.length > 0) {
-    const names = incomplete.map(r => r.student_name || r.student_id).join(', ');
-    const completeCount = currentRows.length - incomplete.length;
-    if (completeCount === 0) {
-      alert('No students have complete data. Fill in missing measurements before generating PDFs.');
-      return;
-    }
-    if (!confirm(incomplete.length + ' student(s) have incomplete data:\n' + names + '\n\nGenerate PDFs for the ' + completeCount + ' complete student(s) only?')) {
-      return;
-    }
+    const names = incomplete.map(r => r.student_name || r.student_id).join('\n  • ');
+    if (!confirm(
+      'Generating PDFs for ' + ready.length + ' complete student(s).\n\n' +
+      incomplete.length + ' student(s) will be skipped (incomplete data):\n  • ' + names +
+      '\n\nProceed?'
+    )) return;
   }
 
   btn.disabled = true; status.textContent = 'Dispatching…'; status.className = 'gen-status';
@@ -334,14 +437,12 @@ async function generatePDFs() {
     if (!data.ok) throw new Error(data.error || 'Dispatch failed');
 
     if (data.run_id) {
-      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">view run ↗</a>`;
-      // Save run_id to localStorage so page reload doesn't lose it
+      status.innerHTML = 'Dispatched — <a href="' + data.run_url + '" target="_blank">view run ↗</a>';
       localStorage.setItem('maidan_last_run_id', data.run_id);
-      localStorage.setItem('maidan_last_run_url', data.run_url);
+      localStorage.setItem('maidan_last_run_url', data.run_url || '');
       pollStatus(data.run_id);
     } else {
-      // Couldn't find run_id yet — give a direct link to Actions page
-      status.innerHTML = `Dispatched — <a href="${data.run_url}" target="_blank">check GitHub Actions ↗</a>`;
+      status.innerHTML = 'Dispatched — <a href="' + data.run_url + '" target="_blank">check GitHub Actions ↗</a>';
       btn.disabled = false;
     }
   } catch (err) {
@@ -357,26 +458,42 @@ function pollStatus(runId) {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     try {
-      const res = await fetch(`/api/generate/status?run_id=${runId}`, { credentials:'same-origin' });
+      const res = await fetch('/api/generate/status?run_id=' + runId, { credentials:'same-origin' });
       const data = await res.json();
       if (data.status === 'completed') {
         clearInterval(pollTimer);
         btn.disabled = false;
         if (data.conclusion === 'success') {
-          status.innerHTML = `✓ Complete — <a href="${data.run_url}" target="_blank">download artifacts</a>`;
+          status.innerHTML = '✓ Complete — <a href="' + data.run_url + '" target="_blank">download artifacts</a>';
           status.className = 'gen-status ok';
         } else {
-          status.textContent = `✗ Failed (${data.conclusion})`;
+          status.textContent = '✗ Failed (' + data.conclusion + ')';
           status.className = 'gen-status err';
         }
+        localStorage.removeItem('maidan_last_run_id');
+        localStorage.removeItem('maidan_last_run_url');
       } else {
-        status.textContent = `Status: ${data.status}…`;
+        status.textContent = 'Status: ' + data.status + '…';
       }
     } catch (_) {
       status.textContent = 'Poll error — retrying…';
     }
   }, 5000);
 }
+
+// ── Restore run status from localStorage on load ─────────────────
+(function restoreRunStatus(){
+  const runId = localStorage.getItem('maidan_last_run_id');
+  if (runId) {
+    const status = document.getElementById('genStatus');
+    const url = localStorage.getItem('maidan_last_run_url') || '';
+    status.innerHTML = 'Resuming poll… ' + (url ? '<a href="' + url + '" target="_blank">view run ↗</a>' : '');
+    pollStatus(runId);
+  }
+})();
+
+// ── Seed date filter to today ────────────────────────────────────
+document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
 </script>
 </body>
 </html>
